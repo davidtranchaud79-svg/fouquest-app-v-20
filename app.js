@@ -209,41 +209,109 @@ function init(){
 }
 init();
 
-// ====== Recettes ======
-async function loadRecettes(){
-  const q = (document.getElementById('recSearch')?.value||'').trim().toLowerCase();
-  const r = await apiGET('recettes');
-  if(!r?.ok){ document.getElementById('recListWrap').innerHTML = '⚠️ '+(r.error||'Erreur'); return; }
-  let rows = r.data||[];
-  if(q) rows = rows.filter(x => (x.nom||'').toLowerCase().includes(q) || (x.categorie||'').toLowerCase().includes(q));
-  const html = rows.map(x => `<div class="list-item" data-id="${x.id||''}" data-name="${escapeHtml(x.nom||'')}">
-    <b>${escapeHtml(x.nom||'')}</b><br><small>${escapeHtml(x.categorie||'')}</small>
-  </div>`).join('') || '—';
-  document.getElementById('recListWrap').innerHTML = html;
-  document.querySelectorAll('#recListWrap .list-item').forEach(div=>{
-    div.addEventListener('click', ()=>{
-      const id = div.getAttribute('data-id');
-      const name = div.getAttribute('data-name');
-      openRecette(id, name);
+// ====== Recettes (compatibles avec HTML: rSearch, rMul, recipesList) ======
+const RECIPES = { all: [], filtered: [] };
+
+async function loadRecipes(){
+  const q = (document.getElementById('rSearch')?.value || '').trim().toLowerCase();
+  const res = await apiGET('recettes');
+  const wrap = document.getElementById('recipesList');
+  if(!res?.ok){ if(wrap) wrap.innerHTML = '⚠️ '+(res?.error||'Erreur'); return; }
+  RECIPES.all = Array.isArray(res.data) ? res.data : [];
+  RECIPES.filtered = q
+    ? RECIPES.all.filter(x => (x.nom||'').toLowerCase().includes(q) || (x.categorie||'').toLowerCase().includes(q))
+    : RECIPES.all.slice();
+  renderRecipesList(RECIPES.filtered);
+}
+
+function renderRecipesList(list){
+  const wrap = document.getElementById('recipesList');
+  if(!wrap) return;
+  if(!list || list.length===0){ wrap.innerHTML = '—'; return; }
+
+  wrap.innerHTML = list.map(r => `
+    <div class="rec-card" data-id="${r.id||''}" data-name="${escapeHtml(r.nom||'')}">
+      <div class="rec-head">
+        <div>
+          <div class="rec-name">${escapeHtml(r.nom||'')}</div>
+          <div class="rec-meta">Catégorie: ${escapeHtml(r.categorie||'')}</div>
+        </div>
+        <div class="rec-money">
+          <div>Coût/portion: ${(r.coutPortion||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</div>
+          <div>Prix vente: ${(r.prixVente||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</div>
+        </div>
+      </div>
+      <div class="rec-detail" hidden>
+        <div class="rec-loading">Chargement…</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Ouverture / chargement du détail
+  wrap.querySelectorAll('.rec-card').forEach(card=>{
+    card.addEventListener('click', async ()=>{
+      const detail = card.querySelector('.rec-detail');
+      const isHidden = detail.hasAttribute('hidden');
+      // referme les autres
+      wrap.querySelectorAll('.rec-detail').forEach(d=> d.setAttribute('hidden',''));
+      if(!isHidden) return;
+
+      detail.innerHTML = `<div class="rec-loading">Chargement…</div>`;
+      detail.removeAttribute('hidden');
+
+      const id = card.getAttribute('data-id');
+      const name = card.getAttribute('data-name');
+      const r = await apiGET('recette_detail', id ? {id} : {nom:name});
+      if(!r?.ok){ detail.innerHTML = '⚠️ '+(r?.error||'Erreur'); return; }
+      renderRecipeDetail(detail, r.data);
     });
   });
 }
-async function openRecette(id, name){
-  document.getElementById('recTitle').textContent = name || 'Recette';
-  const r = await apiGET('recette_detail', id? {id} : {nom: name});
-  const wrap = document.getElementById('recDetailWrap');
-  if(!r?.ok){ wrap.innerHTML = '⚠️ '+(r.error||'Erreur'); return; }
-  const d = r.data||{};
-  const head = `<div class="hint">Catégorie: ${escapeHtml(d.categorie||'')} · Coût total: ${(d.coutTotal||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</div>`;
-  const tbl = (d.ingredients||[]).map(x=>`<tr>
-      <td>${escapeHtml(x.produit||'')}</td>
-      <td>${(x.qte||0).toLocaleString()}</td>
-      <td>${escapeHtml(x.unite||'')}</td>
-      <td>${(x.prixUnitaire||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
-      <td>${(x.cout||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
-    </tr>`).join('');
-  wrap.innerHTML = head + `<table class="mt"><thead><tr><th>Produit</th><th>Qté</th><th>Unité</th><th>PU</th><th>Coût</th></tr></thead><tbody>${tbl||'<tr><td colspan="5">—</td></tr>'}</tbody></table>`;
+
+function renderRecipeDetail(container, data){
+  const mul = parseFloat(document.getElementById('rMul')?.value)||1;
+  const ing = (data.ingredients||[]).map(x=>({
+    produit: x.produit||'',
+    unite: x.unite||'',
+    qte: (Number(x.qte||0)*mul),
+    prixUnitaire: Number(x.prixUnitaire||0),
+    cout: Number(x.cout ?? (Number(x.qte||0)*Number(x.prixUnitaire||0))) * mul
+  }));
+  const coutTotal = ing.reduce((t,x)=>t+Number(x.cout||0),0);
+
+  container.innerHTML = `
+    <div class="hint">x${mul} — Coût total: ${coutTotal.toLocaleString(undefined,{style:'currency',currency:'EUR'})}${data.tva?` · TVA ${Number(data.tva)}%`:''}</div>
+    <table class="mt">
+      <thead><tr><th>Produit</th><th>Qté</th><th>Unité</th><th>PU</th><th>Coût</th></tr></thead>
+      <tbody>
+        ${(ing.length?ing:[{produit:'—',qte:'',unite:'',prixUnitaire:'',cout:''}]).map(x=>`
+          <tr>
+            <td>${escapeHtml(x.produit||'')}</td>
+            <td>${(x.qte||0).toLocaleString()}</td>
+            <td>${escapeHtml(x.unite||'')}</td>
+            <td>${(x.prixUnitaire||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
+            <td>${(x.cout||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
+
+// 🔎 recherche + multiplicateur
+const rSearchEl = document.getElementById('rSearch');
+if(rSearchEl){ rSearchEl.addEventListener('input', ()=> loadRecipes()); }
+const rMulEl = document.getElementById('rMul');
+if(rMulEl){ rMulEl.addEventListener('input', ()=>{
+  const open = document.querySelector('#recipesList .rec-detail:not([hidden])');
+  if(!open) return;
+  const parent = open.closest('.rec-card');
+  const id = parent?.getAttribute('data-id');
+  const name = parent?.getAttribute('data-name');
+  apiGET('recette_detail', id ? {id} : {nom:name}).then(r=>{
+    if(r?.ok) renderRecipeDetail(open, r.data);
+  });
+}); }
 
 const recSearchEl = document.getElementById('recSearch'); if(recSearchEl){ recSearchEl.addEventListener('input', ()=>loadRecettes()); }
 const btnRecRefresh = document.getElementById('btnRecRefresh'); if(btnRecRefresh){ btnRecRefresh.onclick = ()=> loadRecettes(); }// ====== Mensuel (édition) ======
