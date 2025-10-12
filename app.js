@@ -209,7 +209,44 @@ function init(){
 }
 init();
 
-// ====== Mensuel (édition) ======
+// ====== Recettes ======
+async function loadRecettes(){
+  const q = (document.getElementById('recSearch')?.value||'').trim().toLowerCase();
+  const r = await apiGET('recettes');
+  if(!r?.ok){ document.getElementById('recListWrap').innerHTML = '⚠️ '+(r.error||'Erreur'); return; }
+  let rows = r.data||[];
+  if(q) rows = rows.filter(x => (x.nom||'').toLowerCase().includes(q) || (x.categorie||'').toLowerCase().includes(q));
+  const html = rows.map(x => `<div class="list-item" data-id="${x.id||''}" data-name="${escapeHtml(x.nom||'')}">
+    <b>${escapeHtml(x.nom||'')}</b><br><small>${escapeHtml(x.categorie||'')}</small>
+  </div>`).join('') || '—';
+  document.getElementById('recListWrap').innerHTML = html;
+  document.querySelectorAll('#recListWrap .list-item').forEach(div=>{
+    div.addEventListener('click', ()=>{
+      const id = div.getAttribute('data-id');
+      const name = div.getAttribute('data-name');
+      openRecette(id, name);
+    });
+  });
+}
+async function openRecette(id, name){
+  document.getElementById('recTitle').textContent = name || 'Recette';
+  const r = await apiGET('recette_detail', id? {id} : {nom: name});
+  const wrap = document.getElementById('recDetailWrap');
+  if(!r?.ok){ wrap.innerHTML = '⚠️ '+(r.error||'Erreur'); return; }
+  const d = r.data||{};
+  const head = `<div class="hint">Catégorie: ${escapeHtml(d.categorie||'')} · Coût total: ${(d.coutTotal||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</div>`;
+  const tbl = (d.ingredients||[]).map(x=>`<tr>
+      <td>${escapeHtml(x.produit||'')}</td>
+      <td>${(x.qte||0).toLocaleString()}</td>
+      <td>${escapeHtml(x.unite||'')}</td>
+      <td>${(x.prixUnitaire||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
+      <td>${(x.cout||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td>
+    </tr>`).join('');
+  wrap.innerHTML = head + `<table class="mt"><thead><tr><th>Produit</th><th>Qté</th><th>Unité</th><th>PU</th><th>Coût</th></tr></thead><tbody>${tbl||'<tr><td colspan="5">—</td></tr>'}</tbody></table>`;
+}
+
+const recSearchEl = document.getElementById('recSearch'); if(recSearchEl){ recSearchEl.addEventListener('input', ()=>loadRecettes()); }
+const btnRecRefresh = document.getElementById('btnRecRefresh'); if(btnRecRefresh){ btnRecRefresh.onclick = ()=> loadRecettes(); }// ====== Mensuel (édition) ======
 function monthKey(){ return document.getElementById('mMois').value.trim(); }
 function zoneKey(){ return document.getElementById('mZone').value.trim(); }
 
