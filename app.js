@@ -15,7 +15,8 @@ document.getElementById('btnCfgSave').onclick=()=>{
   localStorage.setItem('apiUrl', document.getElementById('cfgApiUrl').value.trim());
   localStorage.setItem('apiKey', document.getElementById('cfgApiKey').value.trim());
   toast('✅ Config enregistrée'); modal.classList.add('hidden');
-  loadDashboard(); loadLookups(); sndOk.play();
+  loadDashboard(); loadLookups(); loadRecipes();
+  sndOk.play();
 };
 function openModal(){
   modal.classList.remove('hidden');
@@ -34,6 +35,7 @@ async function apiGET(path, params={}){
 function toast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2000); }
 function swipe(){ goldSwipe.style.animation='swipe .6s ease'; setTimeout(()=>goldSwipe.style.animation='',700); }
 
+// ---- Router ----
 [...document.querySelectorAll('[data-route-link]')].forEach(btn=>btn.addEventListener('click',()=>{sndClick.play(); showRoute(btn.dataset.routeLink);}));
 const routes=[...document.querySelectorAll('[data-route]')];
 function showRoute(id){
@@ -41,6 +43,7 @@ function showRoute(id){
   routes.forEach(r=>r.classList.toggle('hidden', r.dataset.route!==id));
   swipe();
   if(id==='dashboard') loadDashboard();
+  if(id==='recipes')   loadRecipes();  // charge la liste des recettes quand on ouvre l’onglet
 }
 
 function fillDL(id, items){ const dl=document.getElementById(id); if(!dl) return; dl.innerHTML=(items||[]).map(v=>`<option value="${v}">`).join(''); }
@@ -104,7 +107,6 @@ function renderStockTable(list){
 }
 
 function aggregateZones(data){
-  // Prefer d.zones from API, else aggregate from rows
   if(Array.isArray(data?.zones) && data.zones.length) {
     return data.zones.map(z=>({ zone:z.zone||'(Sans zone)', valeur:+(z.valeur||0), lignes: z.lignes||null }));
   }
@@ -127,7 +129,6 @@ function renderZonesTable(d){
   const rows = (zf? all.filter(x=>x.zone===zf) : all);
   const tr = rows.map(z=>`<tr data-zone="${z.zone}"><td>${z.zone}</td><td>${(z.lignes??'—')}</td><td>${z.valeur.toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td></tr>`).join('');
   wrap.innerHTML = `<table><thead><tr><th>Zone</th><th>Lignes</th><th>Valeur</th></tr></thead><tbody>${tr}</tbody></table>`;
-  // click to filter
   wrap.querySelectorAll('tbody tr').forEach(tr=>{
     tr.addEventListener('click', ()=>{
       const z = tr.getAttribute('data-zone');
@@ -135,11 +136,8 @@ function renderZonesTable(d){
       renderStockTable(d.rows||[]);
     });
   });
-  // export handler
   const btn = document.getElementById('btnExportZone');
-  if(btn){
-    btn.onclick = ()=> exportZonesCSV(rows);
-  }
+  if(btn){ btn.onclick = ()=> exportZonesCSV(rows); }
 }
 
 function exportZonesCSV(rows){
@@ -160,7 +158,7 @@ if(zoneFilterEl){ zoneFilterEl.addEventListener('change', ()=>{ loadDashboard();
 
 function clearForm(sel){ document.querySelectorAll(sel+' input').forEach(i=> i.value=''); const s = document.querySelector(sel+' select'); if(s) s.selectedIndex=0; }
 
-// Pertes
+// ---- Pertes ----
 document.getElementById('btnPerteSave').onclick = async ()=>{
   const body={ type:'PERTE',
     produit: document.getElementById('perteProduit').value.trim(),
@@ -176,7 +174,7 @@ document.getElementById('btnPerteSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// Journalier
+// ---- Journalier ----
 document.getElementById('btnJSave').onclick = async ()=>{
   const type=(document.getElementById('jFlux').value||'').toUpperCase();
   const body={ type,
@@ -192,7 +190,7 @@ document.getElementById('btnJSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// Mensuel
+// ---- Mensuel ----
 document.getElementById('btnGenZone').onclick = async ()=>{
   const mois=document.getElementById('mMois').value.trim();
   const zone=document.getElementById('mZone').value.trim();
@@ -202,14 +200,7 @@ document.getElementById('btnGenZone').onclick = async ()=>{
   if(r.ok) sndOk.play();
 };
 
-// Init
-function init(){
-  showRoute('dashboard'); loadDashboard(); loadLookups();
-  setInterval(loadDashboard, 30000);
-}
-init();
-
-// ====== Recettes (compatibles avec HTML: rSearch, rMul, recipesList) ======
+// ---- Recettes ----
 const RECIPES = { all: [], filtered: [] };
 
 async function loadRecipes(){
@@ -298,7 +289,7 @@ function renderRecipeDetail(container, data){
   `;
 }
 
-// 🔎 recherche + multiplicateur
+// Recherche & multiplicateur (Recettes)
 const rSearchEl = document.getElementById('rSearch');
 if(rSearchEl){ rSearchEl.addEventListener('input', ()=> loadRecipes()); }
 const rMulEl = document.getElementById('rMul');
@@ -313,8 +304,7 @@ if(rMulEl){ rMulEl.addEventListener('input', ()=>{
   });
 }); }
 
-const recSearchEl = document.getElementById('recSearch'); if(recSearchEl){ recSearchEl.addEventListener('input', ()=>loadRecettes()); }
-const btnRecRefresh = document.getElementById('btnRecRefresh'); if(btnRecRefresh){ btnRecRefresh.onclick = ()=> loadRecettes(); }// ====== Mensuel (édition) ======
+// ====== Mensuel (édition) ======
 function monthKey(){ return document.getElementById('mMois').value.trim(); }
 function zoneKey(){ return document.getElementById('mZone').value.trim(); }
 
@@ -385,3 +375,13 @@ document.getElementById('btnSaveInv').onclick = async ()=>{
   toast(r.ok? '✅ Inventaire enregistré' : ('⚠️ '+(r.error||'Erreur')));
   if(r.ok) sndOk.play();
 };
+
+// ---- Init ----
+function init(){
+  showRoute('dashboard');
+  loadDashboard();
+  loadLookups();
+  loadRecipes(); // précharge l’onglet Recettes
+  setInterval(loadDashboard, 30000);
+}
+init();
