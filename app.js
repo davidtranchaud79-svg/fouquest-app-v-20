@@ -377,7 +377,13 @@ function aggregateZones(data){
   return [...map.values()].sort((a,b)=>b.valeur-a.valeur);
 }
 
-let CHARTS={};
+// ======== CHART STATE (stabilité) ========
+let CHARTS = {};
+const TOP_N = 20; // nombre de produits affichés
+const CHART_STATE = {
+  labelsFixed: null // ordre figé au 1er chargement
+};
+
 async function loadDashboard(){
   const sj = await apiGET('stock_journalier');
   if(sj?.ok){
@@ -386,52 +392,65 @@ async function loadDashboard(){
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
     document.getElementById('kpiStockDelta').textContent=`${t('delta_day')}${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // === Graphique par produit : Courbe (Poids en kg) — Top 20 ===
+    // === Graphique par produit : Courbe (Poids en kg) — STABLE Top 20 ===
     if(window.Chart){
-      if(CHARTS.stockZones) CHARTS.stockZones.destroy();
-
-      // source préférée: d.produits[].poidsKg ; sinon fallback calculé
+      // 1) Source préférée: d.produits[].poidsKg ; sinon fallback calculé
       let products = (Array.isArray(d.produits) && d.produits.some(p => p.poidsKg != null))
         ? d.produits.map(p=>({ produit: p.produit || '(Sans nom)', poidsKg: Number(p.poidsKg)||0 }))
         : productsWeightsFromRows(d.rows || []);
 
-      // tri & top N
-      const TOP_N = 20;
-      products = products.sort((a,b)=> (b.poidsKg||0) - (a.poidsKg||0)).slice(0, TOP_N);
+      // 2) Au premier affichage, calcule et fige l'ordre Top N
+      if (!CHART_STATE.labelsFixed) {
+        products = products
+          .sort((a,b)=> (b.poidsKg||0) - (a.poidsKg||0))
+          .slice(0, TOP_N);
+        CHART_STATE.labelsFixed = products.map(p => p.produit);
+      }
 
-      const labels  = products.map(p => p.produit);
-      const weights = products.map(p => Math.round((p.poidsKg || 0) * 1000) / 1000);
+      // 3) Reconstitue les valeurs dans l'ordre figé (produits manquants => 0)
+      const mapKg = new Map(products.map(p => [p.produit, Math.round((p.poidsKg || 0) * 1000) / 1000]));
+      const labels  = CHART_STATE.labelsFixed;
+      const weights = labels.map(lbl => mapKg.get(lbl) || 0);
 
-      CHARTS.stockZones = new Chart(document.getElementById('chartStockZones'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: `Poids (${t('chart_y_kg')})`,
-            data: weights,
-            fill: false,
-            tension: 0.25,
-            pointRadius: 3,
-            pointHoverRadius: 5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            y: {
-              title: { display: true, text: t('chart_y_kg') },
-              ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
-            },
-            x: { title: { display: true, text: t('chart_x_product') } }
+      const ctx = document.getElementById('chartStockZones');
+      if (!CHARTS.stockZones) {
+        CHARTS.stockZones = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: `Poids (${t('chart_y_kg')})`,
+              data: weights,
+              fill: false,
+              tension: 0.25,
+              pointRadius: 3,
+              pointHoverRadius: 5
+            }]
           },
-          plugins: {
-            tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` } },
-            legend: { display: true }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 0 }, // pas d’animation => stable
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              y: {
+                title: { display: true, text: t('chart_y_kg') },
+                ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
+              },
+              x: { title: { display: true, text: t('chart_x_product') } }
+            },
+            plugins: {
+              tooltip: { animation: false, callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` } },
+              legend: { display: true }
+            }
           }
-        }
-      });
+        });
+      } else {
+        // Mise à jour sans re-créer, sans animation, ordre figé
+        CHARTS.stockZones.data.labels = labels;
+        CHARTS.stockZones.data.datasets[0].data = weights;
+        CHARTS.stockZones.update('none'); // no animation
+      }
     }
 
     // Table agrégée par zone (inchangée, valeur €)
