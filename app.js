@@ -382,6 +382,16 @@ function aggregateZones(data){
 // ======== CHART STATE (stabilité zones + produits) ========
 let CHARTS = {};
 const TOP_N = 10; // nb de produits affichés en courbes
+
+// ——> Taille figée du graphe
+const CHART_SIZE = { w: 900, h: 340 };
+function ensureFixedChartSize() {
+  const canvas = document.getElementById('chartStockZones');
+  if (!canvas) return;
+  if (canvas.width !== CHART_SIZE.w)  canvas.width  = CHART_SIZE.w;
+  if (canvas.height !== CHART_SIZE.h) canvas.height = CHART_SIZE.h;
+}
+
 const CHART_STATE = {
   labelsZones: null,
   labelsProducts: null
@@ -441,15 +451,19 @@ async function loadDashboard(){
         };
       });
 
+      // ——— Taille figée AVANT création/maj du chart
+      ensureFixedChartSize();
+
       const ctx = document.getElementById('chartStockZones');
       if (!CHARTS.stockZones) {
         CHARTS.stockZones = new Chart(ctx, {
           type: 'line',
           data: { labels: labelsX, datasets },
           options: {
-            responsive: true,
+            // ——> taille figée : pas de responsive
+            responsive: false,
             maintainAspectRatio: false,
-            animation: { duration: 0 },
+            animation: false,
             interaction: { mode: 'index', intersect: false },
             scales: {
               y: {
@@ -470,7 +484,8 @@ async function loadDashboard(){
           }
         });
       } else {
-        // mise à jour « stable »
+        // mise à jour « stable » (même taille, mêmes labels)
+        ensureFixedChartSize();
         CHARTS.stockZones.data.labels = labelsX;
         CHARTS.stockZones.data.datasets = datasets;
         CHARTS.stockZones.update('none');
