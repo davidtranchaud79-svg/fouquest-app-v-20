@@ -250,6 +250,16 @@ tbody tr:hover{ background: #FFFDF6; }
   min-width: 160px;
 }
 
+/* ---------- Fixed chart size ---------- */
+#chartStockZones {
+  width: 900px;      /* largeur figée */
+  height: 340px;     /* hauteur figée */
+  max-width: none;   /* empêche le shrink */
+  display: block;
+}
+.card canvas#chartStockZones { display: block; }
+.card { overflow-x: auto; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 980px){
   .kpis{ grid-template-columns: repeat(2, minmax(0,1fr)); }
