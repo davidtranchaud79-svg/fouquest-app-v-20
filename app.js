@@ -1,14 +1,287 @@
 // Fouquet's Stock & Pertes v10.2 — Frontend
-const STATE = { lang: localStorage.getItem('lang')||'fr' };
+
+// ===== Lang & état =====
+const STATE = { lang: localStorage.getItem('lang') || 'fr' };
 const modal = document.getElementById('modal');
 const toastEl = document.getElementById('toast');
 const goldSwipe = document.getElementById('gold-swipe');
 const sndClick = document.getElementById('sndClick');
 const sndOk = document.getElementById('sndOk');
 
-const langSel = document.getElementById('langSel'); langSel.value = STATE.lang;
-langSel.addEventListener('change', e=>{ STATE.lang=e.target.value; localStorage.setItem('lang',STATE.lang); location.reload(); });
+// ===== i18n minimal (FR/EN/ES/IT) =====
+const I18N = {
+  fr: {
+    tab_dashboard: "Dashboard",
+    tab_losses: "Pertes",
+    tab_daily: "Journalier",
+    tab_monthly: "Mensuel",
+    tab_recipes: "Recettes",
+    h_dashboard: "Tableau de bord (stock réel)",
+    h_losses: "Pertes journalières",
+    h_daily: "Inventaire journalier",
+    h_monthly: "Inventaire mensuel",
+    h_recipes: "Recettes",
+    btn_refresh: "Rafraîchir",
+    h_zone_value: "Poids (kg) par zone",
+    h_stock_zone: "Stock par zone",
+    btn_export_csv: "Exporter CSV",
+    h_stock_detail: "Détail stock",
+    ph_stock_search: "Rechercher un produit ou une zone…",
+    btn_save_loss: "Enregistrer la perte",
+    lbl_flux: "Flux",
+    lbl_product: "Produit",
+    lbl_qty: "Quantité",
+    lbl_unit: "Unité",
+    lbl_reason: "Motif",
+    lbl_zone: "Zone",
+    btn_save_move: "Enregistrer le mouvement",
+    lbl_month: "Mois (AAAA-MM)",
+    btn_gen_sheet: "Générer la feuille de zone",
+    btn_load: "Charger",
+    btn_add_row: "Ajouter une ligne",
+    btn_save_inv: "Enregistrer",
+    kpi_total_stock: "Total stock",
+    kpi_mv7: "Mouvements 7j",
+    kpi_loss7: "Pertes 7j",
+    kpi_top_loss: "Top perte",
+    delta_day: "Δ jour : ",
+    chart_x_zone: "Zone",
+    chart_y_kg: "kg",
+    cfg_title: "Configuration API",
+    cfg_url: "API URL (WebApp /exec)",
+    cfg_key: "API Key",
+    btn_cfg_save: "Enregistrer",
+    btn_cfg_close: "Fermer",
+    lang_applied: "🌐 Langue appliquée"
+  },
+  en: {
+    tab_dashboard: "Dashboard",
+    tab_losses: "Losses",
+    tab_daily: "Daily",
+    tab_monthly: "Monthly",
+    tab_recipes: "Recipes",
+    h_dashboard: "Dashboard (live stock)",
+    h_losses: "Daily losses",
+    h_daily: "Daily inventory",
+    h_monthly: "Monthly inventory",
+    h_recipes: "Recipes",
+    btn_refresh: "Refresh",
+    h_zone_value: "Weight (kg) by zone",
+    h_stock_zone: "Stock by zone",
+    btn_export_csv: "Export CSV",
+    h_stock_detail: "Stock detail",
+    ph_stock_search: "Search a product or zone…",
+    btn_save_loss: "Save loss",
+    lbl_flux: "Flow",
+    lbl_product: "Product",
+    lbl_qty: "Quantity",
+    lbl_unit: "Unit",
+    lbl_reason: "Reason",
+    lbl_zone: "Zone",
+    btn_save_move: "Save movement",
+    lbl_month: "Month (YYYY-MM)",
+    btn_gen_sheet: "Generate zone sheet",
+    btn_load: "Load",
+    btn_add_row: "Add row",
+    btn_save_inv: "Save",
+    kpi_total_stock: "Total stock",
+    kpi_mv7: "Moves 7d",
+    kpi_loss7: "Losses 7d",
+    kpi_top_loss: "Top loss",
+    delta_day: "Δ day: ",
+    chart_x_zone: "Zone",
+    chart_y_kg: "kg",
+    cfg_title: "API Configuration",
+    cfg_url: "API URL (WebApp /exec)",
+    cfg_key: "API Key",
+    btn_cfg_save: "Save",
+    btn_cfg_close: "Close",
+    lang_applied: "🌐 Language applied"
+  },
+  es: {
+    tab_dashboard: "Panel",
+    tab_losses: "Pérdidas",
+    tab_daily: "Diario",
+    tab_monthly: "Mensual",
+    tab_recipes: "Recetas",
+    h_dashboard: "Panel (stock real)",
+    h_losses: "Pérdidas diarias",
+    h_daily: "Inventario diario",
+    h_monthly: "Inventario mensual",
+    h_recipes: "Recetas",
+    btn_refresh: "Actualizar",
+    h_zone_value: "Peso (kg) por zona",
+    h_stock_zone: "Stock por zona",
+    btn_export_csv: "Exportar CSV",
+    h_stock_detail: "Detalle de stock",
+    ph_stock_search: "Buscar un producto o zona…",
+    btn_save_loss: "Guardar pérdida",
+    lbl_flux: "Flujo",
+    lbl_product: "Producto",
+    lbl_qty: "Cantidad",
+    lbl_unit: "Unidad",
+    lbl_reason: "Motivo",
+    lbl_zone: "Zona",
+    btn_save_move: "Guardar movimiento",
+    lbl_month: "Mes (AAAA-MM)",
+    btn_gen_sheet: "Generar hoja de zona",
+    btn_load: "Cargar",
+    btn_add_row: "Añadir línea",
+    btn_save_inv: "Guardar",
+    kpi_total_stock: "Stock total",
+    kpi_mv7: "Movimientos 7d",
+    kpi_loss7: "Pérdidas 7d",
+    kpi_top_loss: "Pérdida top",
+    delta_day: "Δ día: ",
+    chart_x_zone: "Zona",
+    chart_y_kg: "kg",
+    cfg_title: "Configuración API",
+    cfg_url: "URL API (WebApp /exec)",
+    cfg_key: "Clave API",
+    btn_cfg_save: "Guardar",
+    btn_cfg_close: "Cerrar",
+    lang_applied: "🌐 Idioma aplicado"
+  },
+  it: {
+    tab_dashboard: "Dashboard",
+    tab_losses: "Perdite",
+    tab_daily: "Giornaliero",
+    tab_monthly: "Mensile",
+    tab_recipes: "Ricette",
+    h_dashboard: "Dashboard (stock reale)",
+    h_losses: "Perdite giornaliere",
+    h_daily: "Inventario giornaliero",
+    h_monthly: "Inventario mensile",
+    h_recipes: "Ricette",
+    btn_refresh: "Aggiorna",
+    h_zone_value: "Peso (kg) per zona",
+    h_stock_zone: "Stock per zona",
+    btn_export_csv: "Esporta CSV",
+    h_stock_detail: "Dettaglio stock",
+    ph_stock_search: "Cerca prodotto o zona…",
+    btn_save_loss: "Registra perdita",
+    lbl_flux: "Flusso",
+    lbl_product: "Prodotto",
+    lbl_qty: "Quantità",
+    lbl_unit: "Unità",
+    lbl_reason: "Motivo",
+    lbl_zone: "Zona",
+    btn_save_move: "Registra movimento",
+    lbl_month: "Mese (AAAA-MM)",
+    btn_gen_sheet: "Genera foglio zona",
+    btn_load: "Carica",
+    btn_add_row: "Aggiungi riga",
+    btn_save_inv: "Salva",
+    kpi_total_stock: "Stock totale",
+    kpi_mv7: "Movimenti 7g",
+    kpi_loss7: "Perdite 7g",
+    kpi_top_loss: "Perdita top",
+    delta_day: "Δ giorno: ",
+    chart_x_zone: "Zona",
+    chart_y_kg: "kg",
+    cfg_title: "Configurazione API",
+    cfg_url: "URL API (WebApp /exec)",
+    cfg_key: "Chiave API",
+    btn_cfg_save: "Salva",
+    btn_cfg_close: "Chiudi",
+    lang_applied: "🌐 Lingua applicata"
+  }
+};
 
+function t(key){
+  const lang = STATE.lang in I18N ? STATE.lang : 'fr';
+  return I18N[lang][key] ?? I18N['fr'][key] ?? key;
+}
+
+function applyI18n(){
+  const setAll = (selector, txt) =>
+    document.querySelectorAll(selector).forEach(el => el.textContent = txt);
+
+  // onglets (nav + hero)
+  setAll('[data-route-link="dashboard"]', t('tab_dashboard'));
+  setAll('[data-route-link="losses"]',    t('tab_losses'));
+  setAll('[data-route-link="daily"]',     t('tab_daily'));
+  setAll('[data-route-link="monthly"]',   t('tab_monthly'));
+  setAll('[data-route-link="recipes"]',   t('tab_recipes'));
+
+  // titres sections
+  const hd = document.querySelector('#route-dashboard h2'); if(hd) hd.textContent = t('h_dashboard');
+  const hl = document.querySelector('#route-losses h2');    if(hl) hl.textContent = t('h_losses');
+  const hj = document.querySelector('#route-daily h2');     if(hj) hj.textContent = t('h_daily');
+  const hm = document.querySelector('#route-monthly h2');   if(hm) hm.textContent = t('h_monthly');
+  const hr = document.querySelector('#route-recipes h2');   if(hr) hr.textContent = t('h_recipes');
+
+  // dashboard sous-titres/boutons
+  const s1 = document.querySelector('#route-dashboard .card.mt .row h3');
+  if(s1) s1.textContent = t('h_zone_value');
+  const btnRefresh = document.getElementById('btnRefreshDash'); if(btnRefresh) btnRefresh.textContent = t('btn_refresh');
+
+  const h3s = document.querySelectorAll('#route-dashboard .card.mt h3');
+  if(h3s[1]) h3s[1].textContent = t('h_stock_zone');
+  if(h3s[2]) h3s[2].textContent = t('h_stock_detail');
+
+  const stockSearch = document.getElementById('stockSearch');
+  if(stockSearch) stockSearch.placeholder = t('ph_stock_search');
+
+  const btnExp = document.getElementById('btnExportZone');
+  if(btnExp) btnExp.textContent = t('btn_export_csv');
+
+  // pertes
+  const btnLoss = document.getElementById('btnPerteSave'); if(btnLoss) btnLoss.textContent = t('btn_save_loss');
+  const lblsLoss = document.querySelectorAll('#formPerte label');
+  if(lblsLoss.length >= 5){
+    lblsLoss[0].childNodes[0].nodeValue = t('lbl_product');
+    lblsLoss[1].childNodes[0].nodeValue = t('lbl_qty');
+    lblsLoss[2].childNodes[0].nodeValue = t('lbl_unit');
+    lblsLoss[3].childNodes[0].nodeValue = t('lbl_reason');
+    lblsLoss[4].childNodes[0].nodeValue = t('lbl_zone');
+  }
+
+  // journalier
+  const btnMv = document.getElementById('btnJSave'); if(btnMv) btnMv.textContent = t('btn_save_move');
+  const lblsDaily = document.querySelectorAll('#formDaily label');
+  if(lblsDaily.length >= 5){
+    lblsDaily[0].childNodes[0].nodeValue = t('lbl_flux');
+    lblsDaily[1].childNodes[0].nodeValue = t('lbl_product');
+    lblsDaily[2].childNodes[0].nodeValue = t('lbl_qty');
+    lblsDaily[3].childNodes[0].nodeValue = t('lbl_unit');
+    lblsDaily[4].childNodes[0].nodeValue = t('lbl_zone');
+  }
+
+  // mensuel
+  const lblMonth = document.querySelector('#route-monthly .grid-2 label:first-child');
+  if(lblMonth){ lblMonth.childNodes[0].nodeValue = t('lbl_month'); }
+  const btnGen = document.getElementById('btnGenZone');   if(btnGen)  btnGen.textContent  = t('btn_gen_sheet');
+  const btnLoad = document.getElementById('btnLoadZone'); if(btnLoad) btnLoad.textContent = t('btn_load');
+  const btnAdd  = document.getElementById('btnAddInvRow');if(btnAdd)  btnAdd.textContent  = t('btn_add_row');
+  const btnSave = document.getElementById('btnSaveInv');  if(btnSave) btnSave.textContent = t('btn_save_inv');
+
+  // modal config
+  const panel = document.querySelector('#modal .panel h3'); if(panel) panel.textContent = t('cfg_title');
+  const cfgUrlLbl = document.querySelector('#modal .panel label:nth-of-type(1)');
+  if(cfgUrlLbl){ cfgUrlLbl.childNodes[0].nodeValue = t('cfg_url') + "\n"; }
+  const cfgKeyLbl = document.querySelector('#modal .panel label:nth-of-type(2)');
+  if(cfgKeyLbl){ cfgKeyLbl.childNodes[0].nodeValue = t('cfg_key') + "\n"; }
+  const cfgBtns = document.querySelectorAll('#modal .panel .row button');
+  if(cfgBtns[0]) cfgBtns[0].textContent = t('btn_cfg_save');
+  if(cfgBtns[1]) cfgBtns[1].textContent = t('btn_cfg_close');
+}
+
+// branche le select langue (sans reload)
+const langSel = document.getElementById('langSel');
+if (langSel) {
+  langSel.value = STATE.lang;
+  langSel.addEventListener('change', e=>{
+    STATE.lang = e.target.value || 'fr';
+    localStorage.setItem('lang', STATE.lang);
+    applyI18n();
+    loadDashboard();
+    loadRecipes();
+    toast(t('lang_applied'));
+  });
+}
+
+// ===== Config API =====
 document.getElementById('btnSettings').onclick=()=> openModal();
 document.getElementById('btnCfgClose').onclick=()=> modal.classList.add('hidden');
 document.getElementById('btnCfgSave').onclick=()=>{
@@ -35,7 +308,7 @@ async function apiGET(path, params={}){
 function toast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2000); }
 function swipe(){ goldSwipe.style.animation='swipe .6s ease'; setTimeout(()=>goldSwipe.style.animation='',700); }
 
-// ---- Router ----
+// ===== Router =====
 [...document.querySelectorAll('[data-route-link]')].forEach(btn=>btn.addEventListener('click',()=>{sndClick.play(); showRoute(btn.dataset.routeLink);}));
 const routes=[...document.querySelectorAll('[data-route]')];
 function showRoute(id){
@@ -64,7 +337,7 @@ async function loadLookups(){
   } catch(e){ console.error(e); }
 }
 
-// --- helpers poids (frontend fallback si backend n’envoie pas poidsKg)
+// ===== Helpers poids (fallback si backend n’envoie pas poidsKg) =====
 function toKg(q, u){
   const unit = String(u||'').toLowerCase().trim();
   const x = Number(q)||0; if(!x) return 0;
@@ -72,7 +345,7 @@ function toKg(q, u){
   if (unit==='g'  || unit==='gramme'     || unit==='grammes')     return x/1000;
   if (unit==='mg' || unit==='milligramme'|| unit==='milligrammes') return x/1e6;
   if (unit==='t'  || unit==='tonne'      || unit==='tonnes')      return x*1000;
-  return 0; // on ignore pcs/u/l…
+  return 0; // ignore pcs/u/l…
 }
 function zonesWeightsFromRows(rows){
   const map = new Map();
@@ -93,27 +366,49 @@ async function loadDashboard(){
     const d=sj.data||{};
     document.getElementById('kpiStockJour').textContent=(d.totalNow||0).toLocaleString(undefined,{style:'currency',currency:'EUR'});
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
-    document.getElementById('kpiStockDelta').textContent=`Δ jour : ${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
+    document.getElementById('kpiStockDelta').textContent=`${t('delta_day')}${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // === Graphique par zone : Poids (kg) uniquement ===
+    // === Graphique par zone : Courbe (Poids en kg) ===
     if(window.Chart){
       if(CHARTS.stockZones) CHARTS.stockZones.destroy();
 
-      // on utilise d.zones[].poidsKg si dispo, sinon on calcule depuis d.rows
-      const zones = (Array.isArray(d.zones) && d.zones.some(z=>z.poidsKg!=null))
+      const zones = (Array.isArray(d.zones) && d.zones.some(z => z.poidsKg != null))
         ? d.zones
-        : zonesWeightsFromRows(d.rows||[]);
+        : zonesWeightsFromRows(d.rows || []);
 
-      const labels  = (zones||[]).map(z => z.zone || '(Sans zone)');
-      const weights = (zones||[]).map(z => Math.round((z.poidsKg || 0) * 1000) / 1000);
+      const labels  = (zones || []).map(z => z.zone || '(Sans zone)');
+      const weights = (zones || []).map(z => Math.round((z.poidsKg || 0) * 1000) / 1000);
 
-      CHARTS.stockZones=new Chart(document.getElementById('chartStockZones'),{
-        type:'bar',
-        data:{ labels, datasets:[{ label:'Poids (kg)', data:weights }]},
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          scales:{ y:{ title:{display:true,text:'kg'}, ticks:{ callback:v=>`${v} kg` } } },
-          plugins:{ tooltip:{ callbacks:{ label:ctx=>` ${ctx.parsed.y?.toLocaleString()} kg` } } }
+      CHARTS.stockZones = new Chart(document.getElementById('chartStockZones'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `Poids (${t('chart_y_kg')})`,
+            data: weights,
+            fill: false,
+            tension: 0.25,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            y: {
+              title: { display: true, text: t('chart_y_kg') },
+              ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
+            },
+            x: { title: { display: true, text: t('chart_x_zone') } }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` }
+            },
+            legend: { display: true }
+          }
         }
       });
     }
@@ -134,6 +429,7 @@ async function loadDashboard(){
     document.getElementById('kpiTop').textContent = (kv.topLoss7?.[0]?.produit||'—');
   }
 }
+
 function renderStockTable(list){
   const wrap=document.getElementById('stockTableWrap'); if(!wrap) return;
   if(!list||!list.length){ wrap.innerHTML='—'; return; }
@@ -196,7 +492,7 @@ if(zoneFilterEl){ zoneFilterEl.addEventListener('change', ()=>{ loadDashboard();
 
 function clearForm(sel){ document.querySelectorAll(sel+' input').forEach(i=> i.value=''); const s = document.querySelector(sel+' select'); if(s) s.selectedIndex=0; }
 
-// ---- Pertes ----
+// ===== Pertes =====
 document.getElementById('btnPerteSave').onclick = async ()=>{
   const body={ type:'PERTE',
     produit: document.getElementById('perteProduit').value.trim(),
@@ -212,7 +508,7 @@ document.getElementById('btnPerteSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// ---- Journalier ----
+// ===== Journalier =====
 document.getElementById('btnJSave').onclick = async ()=>{
   const type=(document.getElementById('jFlux').value||'').toUpperCase();
   const body={ type,
@@ -228,7 +524,7 @@ document.getElementById('btnJSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// ---- Mensuel ----
+// ===== Mensuel =====
 document.getElementById('btnGenZone').onclick = async ()=>{
   const mois=document.getElementById('mMois').value.trim();
   const zone=document.getElementById('mZone').value.trim();
@@ -238,7 +534,7 @@ document.getElementById('btnGenZone').onclick = async ()=>{
   if(r.ok) sndOk.play();
 };
 
-// ---- Recettes ----
+// ===== Recettes =====
 const RECIPES = { all: [], filtered: [] };
 
 async function loadRecipes(){
@@ -276,12 +572,10 @@ function renderRecipesList(list){
     </div>
   `).join('');
 
-  // Ouverture / chargement du détail
   wrap.querySelectorAll('.rec-card').forEach(card=>{
     card.addEventListener('click', async ()=>{
       const detail = card.querySelector('.rec-detail');
       const isHidden = detail.hasAttribute('hidden');
-      // referme les autres
       wrap.querySelectorAll('.rec-detail').forEach(d=> d.setAttribute('hidden',''));
       if(!isHidden) return;
 
@@ -342,7 +636,7 @@ if(rMulEl){ rMulEl.addEventListener('input', ()=>{
   });
 }); }
 
-// ====== Mensuel (édition) ======
+// ===== Mensuel (édition) =====
 function monthKey(){ return document.getElementById('mMois').value.trim(); }
 function zoneKey(){ return document.getElementById('mZone').value.trim(); }
 
@@ -414,9 +708,10 @@ document.getElementById('btnSaveInv').onclick = async ()=>{
   if(r.ok) sndOk.play();
 };
 
-// ---- Init ----
+// ===== Init =====
 function init(){
   showRoute('dashboard');
+  applyI18n();         // <— applique la langue dès le chargement
   loadDashboard();
   loadLookups();
   loadRecipes();
