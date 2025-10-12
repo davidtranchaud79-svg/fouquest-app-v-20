@@ -43,7 +43,7 @@ function showRoute(id){
   routes.forEach(r=>r.classList.toggle('hidden', r.dataset.route!==id));
   swipe();
   if(id==='dashboard') loadDashboard();
-  if(id==='recipes')   loadRecipes();  // charge la liste des recettes quand on ouvre l’onglet
+  if(id==='recipes')   loadRecipes();
 }
 
 function fillDL(id, items){ const dl=document.getElementById(id); if(!dl) return; dl.innerHTML=(items||[]).map(v=>`<option value="${v}">`).join(''); }
@@ -64,6 +64,28 @@ async function loadLookups(){
   } catch(e){ console.error(e); }
 }
 
+// --- helpers poids (frontend fallback si backend n’envoie pas poidsKg)
+function toKg(q, u){
+  const unit = String(u||'').toLowerCase().trim();
+  const x = Number(q)||0; if(!x) return 0;
+  if (unit==='kg' || unit==='kilogramme' || unit==='kilogrammes') return x;
+  if (unit==='g'  || unit==='gramme'     || unit==='grammes')     return x/1000;
+  if (unit==='mg' || unit==='milligramme'|| unit==='milligrammes') return x/1e6;
+  if (unit==='t'  || unit==='tonne'      || unit==='tonnes')      return x*1000;
+  return 0; // on ignore pcs/u/l…
+}
+function zonesWeightsFromRows(rows){
+  const map = new Map();
+  (rows||[]).forEach(r=>{
+    const z = r.zone || '(Sans zone)';
+    const kg = toKg(r.qte, r.unite);
+    const cur = map.get(z) || { zone:z, poidsKg:0 };
+    cur.poidsKg += kg;
+    map.set(z, cur);
+  });
+  return [...map.values()].map(x=>({ zone:x.zone, poidsKg:Math.round(x.poidsKg*1000)/1000 }));
+}
+
 let CHARTS={};
 async function loadDashboard(){
   const sj = await apiGET('stock_journalier');
@@ -73,14 +95,30 @@ async function loadDashboard(){
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
     document.getElementById('kpiStockDelta').textContent=`Δ jour : ${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // Bar chart par zone
+    // === Graphique par zone : Poids (kg) uniquement ===
     if(window.Chart){
       if(CHARTS.stockZones) CHARTS.stockZones.destroy();
-      const labels=(d.zones||[]).map(z=>z.zone||'(Sans zone)'); const values=(d.zones||[]).map(z=>Math.round((z.valeur||0)*100)/100);
-      CHARTS.stockZones=new Chart(document.getElementById('chartStockZones'),{ type:'bar', data:{labels,datasets:[{label:'€',data:values}]}, options:{responsive:true,maintainAspectRatio:false} });
+
+      // on utilise d.zones[].poidsKg si dispo, sinon on calcule depuis d.rows
+      const zones = (Array.isArray(d.zones) && d.zones.some(z=>z.poidsKg!=null))
+        ? d.zones
+        : zonesWeightsFromRows(d.rows||[]);
+
+      const labels  = (zones||[]).map(z => z.zone || '(Sans zone)');
+      const weights = (zones||[]).map(z => Math.round((z.poidsKg || 0) * 1000) / 1000);
+
+      CHARTS.stockZones=new Chart(document.getElementById('chartStockZones'),{
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Poids (kg)', data:weights }]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{ y:{ title:{display:true,text:'kg'}, ticks:{ callback:v=>`${v} kg` } } },
+          plugins:{ tooltip:{ callbacks:{ label:ctx=>` ${ctx.parsed.y?.toLocaleString()} kg` } } }
+        }
+      });
     }
 
-    // Table agrégée par zone
+    // Table agrégée par zone (valeur € conservée)
     renderZonesTable(d);
 
     // Détail stock
@@ -381,7 +419,7 @@ function init(){
   showRoute('dashboard');
   loadDashboard();
   loadLookups();
-  loadRecipes(); // précharge l’onglet Recettes
+  loadRecipes();
   setInterval(loadDashboard, 30000);
 }
 init();
