@@ -348,17 +348,19 @@ function toKg(q, u){
   return 0; // on ignore pcs/u/l…
 }
 
-// poids par produit (fallback si backend ne renvoie pas d.produits[].poidsKg)
-function productsWeightsFromRows(rows){
-  const map = new Map();
+// ===== Aggrégations pour le graphique multi-courbes =====
+function productZoneKgFromRows(rows){
+  // Map produit -> Map zone -> kg
+  const m = new Map();
   (rows||[]).forEach(r=>{
-    const p = r.produit || '(Sans nom)';
+    const prod = r.produit || '(Sans nom)';
+    const zone = r.zone || '(Sans zone)';
     const kg = toKg(r.qte, r.unite);
-    const cur = map.get(p) || { produit:p, poidsKg:0 };
-    cur.poidsKg += kg;
-    map.set(p, cur);
+    if (!m.has(prod)) m.set(prod, new Map());
+    const zm = m.get(prod);
+    zm.set(zone, (zm.get(zone)||0) + kg);
   });
-  return [...map.values()].map(x=>({ produit:x.produit, poidsKg:Math.round(x.poidsKg*1000)/1000 }));
+  return m;
 }
 
 // (conserve pour la table “par zone” existante)
@@ -377,11 +379,12 @@ function aggregateZones(data){
   return [...map.values()].sort((a,b)=>b.valeur-a.valeur);
 }
 
-// ======== CHART STATE (stabilité) ========
+// ======== CHART STATE (stabilité zones + produits) ========
 let CHARTS = {};
-const TOP_N = 20; // nombre de produits affichés
+const TOP_N = 10; // nb de produits affichés en courbes
 const CHART_STATE = {
-  labelsFixed: null // ordre figé au 1er chargement
+  labelsZones: null,
+  labelsProducts: null
 };
 
 async function loadDashboard(){
@@ -392,64 +395,85 @@ async function loadDashboard(){
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
     document.getElementById('kpiStockDelta').textContent=`${t('delta_day')}${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // === Graphique par produit : Courbe (Poids en kg) — STABLE Top 20 ===
+    // === Graphique multi-courbes : 1 courbe par produit (Top N) — poids(kg) par zone ===
     if(window.Chart){
-      // 1) Source préférée: d.produits[].poidsKg ; sinon fallback calculé
-      let products = (Array.isArray(d.produits) && d.produits.some(p => p.poidsKg != null))
-        ? d.produits.map(p=>({ produit: p.produit || '(Sans nom)', poidsKg: Number(p.poidsKg)||0 }))
-        : productsWeightsFromRows(d.rows || []);
+      const mProdZone = productZoneKgFromRows(d.rows || []);
 
-      // 2) Au premier affichage, calcule et fige l'ordre Top N
-      if (!CHART_STATE.labelsFixed) {
-        products = products
-          .sort((a,b)=> (b.poidsKg||0) - (a.poidsKg||0))
-          .slice(0, TOP_N);
-        CHART_STATE.labelsFixed = products.map(p => p.produit);
+      // Figer les ZONES au 1er rendu (ordre = zones les plus lourdes)
+      if (!CHART_STATE.labelsZones) {
+        const zoneTotals = new Map();
+        (d.rows||[]).forEach(r=>{
+          const z = r.zone || '(Sans zone)';
+          zoneTotals.set(z, (zoneTotals.get(z)||0) + toKg(r.qte, r.unite));
+        });
+        const zonesSorted = [...zoneTotals.entries()]
+          .sort((a,b)=> b[1]-a[1])
+          .map(([z])=>z);
+        CHART_STATE.labelsZones = zonesSorted.length ? zonesSorted : ['(Sans zone)'];
       }
 
-      // 3) Reconstitue les valeurs dans l'ordre figé (produits manquants => 0)
-      const mapKg = new Map(products.map(p => [p.produit, Math.round((p.poidsKg || 0) * 1000) / 1000]));
-      const labels  = CHART_STATE.labelsFixed;
-      const weights = labels.map(lbl => mapKg.get(lbl) || 0);
+      // Figer les PRODUITS au 1er rendu (Top N par poids total)
+      if (!CHART_STATE.labelsProducts) {
+        const prodTotals = [...mProdZone.entries()].map(([p, zm]) => ({
+          produit: p,
+          kg: [...zm.values()].reduce((t,x)=>t+x,0)
+        }));
+        CHART_STATE.labelsProducts = prodTotals
+          .sort((a,b)=> b.kg - a.kg)
+          .slice(0, TOP_N)
+          .map(x=>x.produit);
+      }
+
+      // Construire datasets (un par produit) alignés sur les zones figées
+      const labelsX = CHART_STATE.labelsZones;
+      const products = CHART_STATE.labelsProducts;
+
+      const datasets = products.map(prod => {
+        const zm = mProdZone.get(prod) || new Map();
+        const data = labelsX.map(z => Math.round(((zm.get(z)||0))*1000)/1000);
+        return {
+          label: prod,
+          data,
+          fill: false,
+          tension: 0.25,
+          pointRadius: 2,
+          pointHoverRadius: 4
+        };
+      });
 
       const ctx = document.getElementById('chartStockZones');
       if (!CHARTS.stockZones) {
         CHARTS.stockZones = new Chart(ctx, {
           type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: `Poids (${t('chart_y_kg')})`,
-              data: weights,
-              fill: false,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
-          },
+          data: { labels: labelsX, datasets },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 0 }, // pas d’animation => stable
+            animation: { duration: 0 },
             interaction: { mode: 'index', intersect: false },
             scales: {
               y: {
                 title: { display: true, text: t('chart_y_kg') },
                 ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
               },
-              x: { title: { display: true, text: t('chart_x_product') } }
+              x: { title: { display: true, text: t('h_stock_zone') } }
             },
             plugins: {
-              tooltip: { animation: false, callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` } },
+              tooltip: {
+                animation: false,
+                callbacks: {
+                  label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}`
+                }
+              },
               legend: { display: true }
             }
           }
         });
       } else {
-        // Mise à jour sans re-créer, sans animation, ordre figé
-        CHARTS.stockZones.data.labels = labels;
-        CHARTS.stockZones.data.datasets[0].data = weights;
-        CHARTS.stockZones.update('none'); // no animation
+        // mise à jour « stable »
+        CHARTS.stockZones.data.labels = labelsX;
+        CHARTS.stockZones.data.datasets = datasets;
+        CHARTS.stockZones.update('none');
       }
     }
 
