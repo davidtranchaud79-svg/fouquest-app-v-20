@@ -22,7 +22,7 @@ const I18N = {
     h_monthly: "Inventaire mensuel",
     h_recipes: "Recettes",
     btn_refresh: "Rafraîchir",
-    h_zone_value: "Poids (kg) par zone",
+    h_prod_value: "Poids (kg) par produit (Top 20)",
     h_stock_zone: "Stock par zone",
     btn_export_csv: "Exporter CSV",
     h_stock_detail: "Détail stock",
@@ -45,7 +45,7 @@ const I18N = {
     kpi_loss7: "Pertes 7j",
     kpi_top_loss: "Top perte",
     delta_day: "Δ jour : ",
-    chart_x_zone: "Zone",
+    chart_x_product: "Produit",
     chart_y_kg: "kg",
     cfg_title: "Configuration API",
     cfg_url: "API URL (WebApp /exec)",
@@ -66,7 +66,7 @@ const I18N = {
     h_monthly: "Monthly inventory",
     h_recipes: "Recipes",
     btn_refresh: "Refresh",
-    h_zone_value: "Weight (kg) by zone",
+    h_prod_value: "Weight (kg) by product (Top 20)",
     h_stock_zone: "Stock by zone",
     btn_export_csv: "Export CSV",
     h_stock_detail: "Stock detail",
@@ -89,7 +89,7 @@ const I18N = {
     kpi_loss7: "Losses 7d",
     kpi_top_loss: "Top loss",
     delta_day: "Δ day: ",
-    chart_x_zone: "Zone",
+    chart_x_product: "Product",
     chart_y_kg: "kg",
     cfg_title: "API Configuration",
     cfg_url: "API URL (WebApp /exec)",
@@ -110,7 +110,7 @@ const I18N = {
     h_monthly: "Inventario mensual",
     h_recipes: "Recetas",
     btn_refresh: "Actualizar",
-    h_zone_value: "Peso (kg) por zona",
+    h_prod_value: "Peso (kg) por producto (Top 20)",
     h_stock_zone: "Stock por zona",
     btn_export_csv: "Exportar CSV",
     h_stock_detail: "Detalle de stock",
@@ -133,7 +133,7 @@ const I18N = {
     kpi_loss7: "Pérdidas 7d",
     kpi_top_loss: "Pérdida top",
     delta_day: "Δ día: ",
-    chart_x_zone: "Zona",
+    chart_x_product: "Producto",
     chart_y_kg: "kg",
     cfg_title: "Configuración API",
     cfg_url: "URL API (WebApp /exec)",
@@ -154,7 +154,7 @@ const I18N = {
     h_monthly: "Inventario mensile",
     h_recipes: "Ricette",
     btn_refresh: "Aggiorna",
-    h_zone_value: "Peso (kg) per zona",
+    h_prod_value: "Peso (kg) per prodotto (Top 20)",
     h_stock_zone: "Stock per zona",
     btn_export_csv: "Esporta CSV",
     h_stock_detail: "Dettaglio stock",
@@ -177,7 +177,7 @@ const I18N = {
     kpi_loss7: "Perdite 7g",
     kpi_top_loss: "Perdita top",
     delta_day: "Δ giorno: ",
-    chart_x_zone: "Zona",
+    chart_x_product: "Prodotto",
     chart_y_kg: "kg",
     cfg_title: "Configurazione API",
     cfg_url: "URL API (WebApp /exec)",
@@ -211,9 +211,9 @@ function applyI18n(){
   const hm = document.querySelector('#route-monthly h2');   if(hm) hm.textContent = t('h_monthly');
   const hr = document.querySelector('#route-recipes h2');   if(hr) hr.textContent = t('h_recipes');
 
-  // dashboard sous-titres/boutons
+  // dashboard : titre du graphique devient "par produit"
   const s1 = document.querySelector('#route-dashboard .card.mt .row h3');
-  if(s1) s1.textContent = t('h_zone_value');
+  if(s1) s1.textContent = t('h_prod_value');
   const btnRefresh = document.getElementById('btnRefreshDash'); if(btnRefresh) btnRefresh.textContent = t('btn_refresh');
 
   const h3s = document.querySelectorAll('#route-dashboard .card.mt h3');
@@ -337,7 +337,7 @@ async function loadLookups(){
   } catch(e){ console.error(e); }
 }
 
-// ===== Helpers poids (fallback si backend n’envoie pas poidsKg) =====
+// ===== Helpers poids =====
 function toKg(q, u){
   const unit = String(u||'').toLowerCase().trim();
   const x = Number(q)||0; if(!x) return 0;
@@ -345,18 +345,36 @@ function toKg(q, u){
   if (unit==='g'  || unit==='gramme'     || unit==='grammes')     return x/1000;
   if (unit==='mg' || unit==='milligramme'|| unit==='milligrammes') return x/1e6;
   if (unit==='t'  || unit==='tonne'      || unit==='tonnes')      return x*1000;
-  return 0; // ignore pcs/u/l…
+  return 0; // on ignore pcs/u/l…
 }
-function zonesWeightsFromRows(rows){
+
+// poids par produit (fallback si backend ne renvoie pas d.produits[].poidsKg)
+function productsWeightsFromRows(rows){
   const map = new Map();
   (rows||[]).forEach(r=>{
-    const z = r.zone || '(Sans zone)';
+    const p = r.produit || '(Sans nom)';
     const kg = toKg(r.qte, r.unite);
-    const cur = map.get(z) || { zone:z, poidsKg:0 };
+    const cur = map.get(p) || { produit:p, poidsKg:0 };
     cur.poidsKg += kg;
-    map.set(z, cur);
+    map.set(p, cur);
   });
-  return [...map.values()].map(x=>({ zone:x.zone, poidsKg:Math.round(x.poidsKg*1000)/1000 }));
+  return [...map.values()].map(x=>({ produit:x.produit, poidsKg:Math.round(x.poidsKg*1000)/1000 }));
+}
+
+// (conserve pour la table “par zone” existante)
+function aggregateZones(data){
+  if(Array.isArray(data?.zones) && data.zones.length) {
+    return data.zones.map(z=>({ zone:z.zone||'(Sans zone)', valeur:+(z.valeur||0), lignes: z.lignes||null }));
+  }
+  const map = new Map();
+  (data?.rows||[]).forEach(r=>{
+    const key = r.zone||'(Sans zone)';
+    const cur = map.get(key)||{ zone:key, valeur:0, lignes:0 };
+    cur.valeur += +r.valeur||0;
+    cur.lignes += 1;
+    map.set(key, cur);
+  });
+  return [...map.values()].sort((a,b)=>b.valeur-a.valeur);
 }
 
 let CHARTS={};
@@ -368,16 +386,21 @@ async function loadDashboard(){
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
     document.getElementById('kpiStockDelta').textContent=`${t('delta_day')}${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // === Graphique par zone : Courbe (Poids en kg) ===
+    // === Graphique par produit : Courbe (Poids en kg) — Top 20 ===
     if(window.Chart){
       if(CHARTS.stockZones) CHARTS.stockZones.destroy();
 
-      const zones = (Array.isArray(d.zones) && d.zones.some(z => z.poidsKg != null))
-        ? d.zones
-        : zonesWeightsFromRows(d.rows || []);
+      // source préférée: d.produits[].poidsKg ; sinon fallback calculé
+      let products = (Array.isArray(d.produits) && d.produits.some(p => p.poidsKg != null))
+        ? d.produits.map(p=>({ produit: p.produit || '(Sans nom)', poidsKg: Number(p.poidsKg)||0 }))
+        : productsWeightsFromRows(d.rows || []);
 
-      const labels  = (zones || []).map(z => z.zone || '(Sans zone)');
-      const weights = (zones || []).map(z => Math.round((z.poidsKg || 0) * 1000) / 1000);
+      // tri & top N
+      const TOP_N = 20;
+      products = products.sort((a,b)=> (b.poidsKg||0) - (a.poidsKg||0)).slice(0, TOP_N);
+
+      const labels  = products.map(p => p.produit);
+      const weights = products.map(p => Math.round((p.poidsKg || 0) * 1000) / 1000);
 
       CHARTS.stockZones = new Chart(document.getElementById('chartStockZones'), {
         type: 'line',
@@ -401,25 +424,24 @@ async function loadDashboard(){
               title: { display: true, text: t('chart_y_kg') },
               ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
             },
-            x: { title: { display: true, text: t('chart_x_zone') } }
+            x: { title: { display: true, text: t('chart_x_product') } }
           },
           plugins: {
-            tooltip: {
-              callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` }
-            },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` } },
             legend: { display: true }
           }
         }
       });
     }
 
-    // Table agrégée par zone (valeur € conservée)
+    // Table agrégée par zone (inchangée, valeur €)
     renderZonesTable(d);
 
-    // Détail stock
+    // Détail stock (inchangé)
     if(Array.isArray(d.rows)) renderStockTable(d.rows);
   }
 
+  // KPIs (inchangés)
   const k = await apiGET('dashboard_kpis');
   if(k?.ok){
     const kv = k.data||{};
@@ -438,21 +460,6 @@ function renderStockTable(list){
   const filtered = list.filter(r=> (q?`${r.produit||''} ${r.zone||''}`.toLowerCase().includes(q):true) && (zf? (r.zone||'')===zf : true));
   const tr=filtered.map(r=>`<tr><td>${r.produit||''}</td><td>${r.zone||''}</td><td>${(r.qte||0).toLocaleString()}</td><td>${r.unite||''}</td><td>${(r.valeur||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td></tr>`).join('');
   wrap.innerHTML=`<table><thead><tr><th>Produit</th><th>Zone</th><th>Qté</th><th>Unité</th><th>Valeur</th></tr></thead><tbody>${tr}</tbody></table>`;
-}
-
-function aggregateZones(data){
-  if(Array.isArray(data?.zones) && data.zones.length) {
-    return data.zones.map(z=>({ zone:z.zone||'(Sans zone)', valeur:+(z.valeur||0), lignes: z.lignes||null }));
-  }
-  const map = new Map();
-  (data?.rows||[]).forEach(r=>{
-    const key = r.zone||'(Sans zone)';
-    const cur = map.get(key)||{ zone:key, valeur:0, lignes:0 };
-    cur.valeur += +r.valeur||0;
-    cur.lignes += 1;
-    map.set(key, cur);
-  });
-  return [...map.values()].sort((a,b)=>b.valeur-a.valeur);
 }
 
 function renderZonesTable(d){
@@ -711,7 +718,7 @@ document.getElementById('btnSaveInv').onclick = async ()=>{
 // ===== Init =====
 function init(){
   showRoute('dashboard');
-  applyI18n();         // <— applique la langue dès le chargement
+  applyI18n();
   loadDashboard();
   loadLookups();
   loadRecipes();
