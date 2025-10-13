@@ -274,3 +274,15 @@ tbody tr:hover{ background: #FFFDF6; }
   .btn{ padding:.5rem .7rem; }
   .hero .logo{ width: 110px; }
 }
+/* Fix clavier iOS / Android */
+input, select, textarea {
+  -webkit-user-select: text !important;
+  touch-action: manipulation !important;
+}
+
+.card input, .card select {
+  transform: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
