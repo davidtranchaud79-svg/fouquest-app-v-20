@@ -384,13 +384,61 @@ function aggregateZones(data){
 let CHARTS = {};
 const TOP_N = 10; // nb de produits affichés en courbes
 
-// ——> Taille figée du graphe
+// ——> Taille figée du graphe principal
 const CHART_SIZE = { w: 900, h: 340 };
 function ensureFixedChartSize() {
   const canvas = document.getElementById('chartStockZones');
   if (!canvas) return;
   if (canvas.width !== CHART_SIZE.w)  canvas.width  = CHART_SIZE.w;
   if (canvas.height !== CHART_SIZE.h) canvas.height = CHART_SIZE.h;
+}
+
+// —— Pertes 7j : taille figée du canvas pertes (si présent)
+function ensureLossChartSize(){
+  const c = document.getElementById('chartLoss7');
+  if(!c) return;
+  if (c.width !== 900) c.width = 900;
+  if (c.height !== 280) c.height = 280;
+}
+
+// —— Rend/Met à jour le graphique des pertes (barres) — optionnel
+function renderLossChartFromData(series){
+  const el = document.getElementById('chartLoss7');
+  if(!el || !window.Chart) return;
+  ensureLossChartSize();
+
+  const labels = series.map(s => s.date);
+  const data   = series.map(s => Math.round((s.valeur||0)*100)/100);
+
+  if(!window.CHARTS) window.CHARTS = {};
+
+  if(!CHARTS.loss7){
+    CHARTS.loss7 = new Chart(el, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Pertes (€)', data }] },
+      options: {
+        responsive: false,
+        animation: false,
+        scales: {
+          y: {
+            ticks: { callback: v => v.toLocaleString(undefined,{style:'currency',currency:'EUR'}) }
+          }
+        },
+        plugins: {
+          legend: { display:false },
+          tooltip: {
+            callbacks: {
+              label: ctx => (ctx.parsed.y||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})
+            }
+          }
+        }
+      }
+    });
+  } else {
+    CHARTS.loss7.data.labels = labels;
+    CHARTS.loss7.data.datasets[0].data = data;
+    CHARTS.loss7.update('none');
+  }
 }
 
 const CHART_STATE = {
@@ -509,6 +557,33 @@ async function loadDashboard(){
     document.getElementById('kpiLoss7').textContent = lossSum.toLocaleString(undefined,{style:'currency',currency:'EUR'});
     document.getElementById('kpiTop').textContent = (kv.topLoss7?.[0]?.produit||'—');
   }
+
+  // === Graphique pertes 7 jours (si un canvas #chartLoss7 existe) ===
+  try{
+    const kpis = await apiGET('dashboard_kpis'); // re-use endpoint (au cas où k n'était pas ok)
+    const lossRaw = (kpis?.data?.loss7 || kpis?.data?.topLoss7 || []);
+    let series = [];
+
+    if (Array.isArray(lossRaw) && lossRaw.length && lossRaw[0]?.date != null) {
+      // Format attendu : [{date:'YYYY-MM-DD', valeur:Number}, ...]
+      series = lossRaw.map(x => ({ date: String(x.date), valeur: Number(x.valeur||0) }));
+    } else if (sj?.ok && Array.isArray(sj.data?.rows)) {
+      // Fallback: reconstruire depuis les mouvements PERTE du stock_journalier
+      const rows = sj.data.rows.filter(r => (String(r.type||'').toUpperCase() === 'PERTE'));
+      const byDay = new Map();
+      rows.forEach(r=>{
+        const dRaw = r.date || r.jour || r.day || r.ts || '';
+        const d = String(dRaw).slice(0,10); // YYYY-MM-DD
+        byDay.set(d, (byDay.get(d)||0) + Number(r.valeur||0));
+      });
+      series = [...byDay.entries()]
+        .map(([date,valeur]) => ({date, valeur}))
+        .sort((a,b)=> a.date.localeCompare(b.date))
+        .slice(-7);
+    }
+
+    if (series.length) renderLossChartFromData(series);
+  }catch(e){ console.warn('loss chart build error:', e); }
 }
 
 function renderStockTable(list){
@@ -553,6 +628,7 @@ function exportZonesCSV(rows){
 
 document.getElementById('stockSearch').addEventListener('input',()=>loadDashboard());
 document.getElementById('btnRefreshDash').onclick=()=>{ sndClick.play(); loadDashboard(); };
+document.getElementById('btnRefreshLoss')?.addEventListener('click', ()=> loadDashboard()); // optionnel
 const zoneFilterEl = document.getElementById('zoneFilter');
 if(zoneFilterEl){ zoneFilterEl.addEventListener('change', ()=>{ loadDashboard(); }); }
 
