@@ -292,3 +292,15 @@ input, select, textarea {
 html { -webkit-text-size-adjust: 100%; }
 * { -webkit-tap-highlight-color: transparent; }
 .wrap { min-height: 100svh; }
+
+/* Fix clavier iOS / Android */
+input, select, textarea {
+  -webkit-user-select: text !important;
+  touch-action: manipulation !important;
+}
+
+.card input, .card select {
+  transform: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
