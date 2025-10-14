@@ -285,6 +285,7 @@ tbody tr:hover{ background: #FFFDF6; }
     0 1px 0 #a48422,
     0 0 6px rgba(255,220,150,0.8);
 }
+
 /* ---------- Utilities ---------- */
 .hidden{ display:none !important; }
 .mt{ margin-top: .75rem; }
