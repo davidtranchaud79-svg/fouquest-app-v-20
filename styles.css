@@ -215,23 +215,94 @@ tbody tr:hover{ background: #FFFDF6; }
 }
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
-/* ---------- Gold swipe animation (JS) ---------- */
-#gold-swipe{
-  position: fixed;
-  top:0; left:0;
-  height:5px;
-  width:0;
-  z-index:70;
-  background: linear-gradient(90deg, rgba(255,215,130,.1), var(--gold), rgba(255,215,130,.1));
-  border-radius: 3px;
-  box-shadow: 0 0 6px rgba(201,162,39,.45);
+/** Mouvements.gs — Entrées / Sorties / Pertes (PERTE n'impacte pas Stock_Courant) **/
+function handlePostMouvement(p){
+  p = p || {};
+  const type    = String((p.type||'')).toUpperCase(); // ENTREE | SORTIE | PERTE
+  const produit = String(p.produit||'').trim();
+  const unite   = String(p.unite||'').trim();
+  const zone    = String(p.zone||'').trim();
+  const qte     = Number(p.qte||0);
+  const motif   = p.motif || '';
+  const prix    = Number(p.prix||0);
+
+  if (!produit || !unite || !zone || !qte || !type) {
+    return { ok:false, error:'Champs requis manquants' };
+  }
+
+  // 1) Log mouvement
+  const shMv = ensureSheet_('Mouvements', ['timestamp','user','type','code','produit','qte','unite','motif','zone','prix']);
+  shMv.appendRow([ new Date(), Session.getActiveUser().getEmail()||'webapp', type, '', produit, qte, unite, motif, zone, prix ]);
+
+  // 2) Maj du stock courant — uniquement pour ENTREE / SORTIE
+  if (type !== 'PERTE') {
+    upsertStockCourant_(produit, unite, zone, qte, prix, type);
+  }
+
+  // 3) Log pertes mensuelles (PERTE uniquement)
+  if (type === 'PERTE') {
+    logPerteMensuelle_(produit, unite, zone, qte, prix, motif);
+  }
+
+  return { ok:true };
 }
-@keyframes swipe{
-  0%{ width:0; left:0; opacity:0; }
-  10%{ opacity:1; }
-  50%{ width:100%; left:0; opacity:1; }
-  100%{ width:0; left:100%; opacity:0; }
+
+// Mise à jour du Stock_Courant (anti-négatifs, MAJ prix sur ENTREE)
+function upsertStockCourant_(produit, unite, zone, qte, prix, type){
+  const sh = ensureSheet_('Stock_Courant', ['produit','unite','quantite','prix','zone','famille']);
+  const data = sh.getDataRange().getValues();
+  const head = data[0].map(h=>String(h||'').toLowerCase());
+
+  const iP  = head.indexOf('produit');
+  const iU  = head.indexOf('unite');
+  const iQ  = head.indexOf('quantite');
+  const iPr = head.indexOf('prix');
+  const iZ  = head.indexOf('zone');
+
+  let rowFound = null;
+  for (let i=1;i<data.length;i++){
+    const r=data[i];
+    if (String(r[iP]||'').trim().toLowerCase()===produit.trim().toLowerCase()
+        && String(r[iU]||'').trim().toLowerCase()===unite.trim().toLowerCase()
+        && String(r[iZ]||'').trim().toLowerCase()===zone.trim().toLowerCase()){
+      rowFound = i+1; break;
+    }
+  }
+
+  const delta = (type==='ENTREE') ? +qte : -qte; // SORTIE => négatif
+
+  if (rowFound){
+    const curQ = Number(sh.getRange(rowFound, iQ+1).getValue()||0);
+    const newQ = Math.max(0, curQ + delta); // empêche les négatifs
+    sh.getRange(rowFound, iQ+1).setValue(newQ);
+    if (type==='ENTREE' && prix>0) sh.getRange(rowFound, iPr+1).setValue(prix);
+  } else {
+    // Si SORTIE sans ligne existante : on crée à 0 (on n'autorise pas un négatif initial)
+    const initQ = (type==='ENTREE') ? Math.max(0, qte) : 0;
+    sh.appendRow([ produit, unite, initQ, Math.max(0, prix||0), zone, '' ]);
+  }
 }
+
+// Journal mensuel des pertes (n'impacte pas le stock courant)
+function logPerteMensuelle_(produit, unite, zone, qte, prix, motif){
+  const now = new Date();
+  const ym = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM');
+  const name = 'Pertes_'+ym;
+  const sh = ensureSheet_(name, ['timestamp','produit','unite','qte','zone','motif','prix','valeur']);
+  const valeur = Number(qte||0)*Number(prix||0);
+  sh.appendRow([ now, produit, unite, qte, zone, motif, prix, valeur ]);
+}
+
+// Test rapide
+function test_handlePostMouvement(){
+  const p1 = { type:'ENTREE', produit:'Saumon', unite:'kg', zone:'Entremet', qte:10, prix:25 };
+  const p2 = { type:'SORTIE', produit:'Saumon', unite:'kg', zone:'Entremet', qte:2 };
+  const p3 = { type:'PERTE',  produit:'Saumon', unite:'kg', zone:'Entremet', qte:1, prix:25, motif:'DLC' };
+  Logger.log(JSON.stringify(handlePostMouvement(p1)));
+  Logger.log(JSON.stringify(handlePostMouvement(p2)));
+  Logger.log(JSON.stringify(handlePostMouvement(p3))); // n’impacte PAS Stock_Courant
+}
+
 
 /* ---------- Utilities ---------- */
 .hidden{ display:none !important; }
