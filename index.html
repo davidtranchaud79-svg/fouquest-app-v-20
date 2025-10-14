@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
   <title>Fouquet’s Stock &amp; Pertes</title>
-  <link rel="manifest" href="manifest.webmanifest"/>
-  <link rel="icon" href="icons/icon-192.png"/>
-  <meta name="theme-color" content="#5A0D0D"/>
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#5A0D0D" />
 
   <!-- iPhone / A2HS tweaks -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
 
-  <link rel="preload" href="assets/click.wav" as="audio"/>
-  <link rel="preload" href="assets/success.wav" as="audio"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <link rel="preload" href="assets/click.wav" as="audio" />
+  <link rel="preload" href="assets/success.wav" as="audio" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Garde: barre de progression or en haut -->
   <div id="gold-swipe"></div>
+
   <div id="loader" class="hidden"><div class="ring"></div></div>
 
   <audio id="sndClick" src="assets/click.wav" preload="auto"></audio>
@@ -26,11 +33,16 @@
 
   <div class="wrap">
     <header class="hero">
-      <img class="hero-bg" src="assets/bg-hero-fouquets.jpg" alt=""/>
+      <img class="hero-bg" src="assets/bg-hero-fouquets.jpg" alt="" />
       <div class="hero-overlay"></div>
+
       <div class="hero-content">
-        <img class="logo" src="icons/logo-fouquets.png" alt="Fouquet's"/>
+        <!-- NEW: sceau doré centré -->
+        <div id="gold-seal" aria-hidden="true"></div>
+
+        <img class="logo" src="icons/logo-fouquets.png" alt="Fouquet's" />
         <h1>Fouquet’s Stock &amp; Pertes</h1>
+
         <div class="home-actions">
           <button class="btn" data-route-link="dashboard">Dashboard</button>
           <button class="btn" data-route-link="losses">Pertes</button>
@@ -90,7 +102,7 @@
           <canvas id="chartStockZones" height="200"></canvas>
         </div>
 
-        <!-- AJOUT: Pertes 7 jours -->
+        <!-- Graphique pertes 7 jours -->
         <div class="card mt">
           <div class="row" style="gap:.75rem; flex-wrap:wrap">
             <h3>Pertes 7 jours</h3>
@@ -115,7 +127,7 @@
 
         <div class="card mt">
           <h3>Détail stock</h3>
-          <input id="stockSearch" placeholder="Rechercher un produit ou une zone…"/>
+          <input id="stockSearch" placeholder="Rechercher un produit ou une zone…" />
           <div id="stockTableWrap" style="overflow:auto"></div>
         </div>
       </section>
@@ -125,19 +137,19 @@
         <h2>Pertes journalières</h2>
         <form id="formPerte" class="grid-2" onsubmit="return false;">
           <label>Produit
-            <input id="perteProduit" list="dlProduits" required/>
+            <input id="perteProduit" list="dlProduits" required />
           </label>
           <label>Quantité
-            <input id="perteQte" type="number" step="any" required/>
+            <input id="perteQte" type="number" step="any" required />
           </label>
           <label>Unité
-            <input id="perteUnite" list="dlUnites" required/>
+            <input id="perteUnite" list="dlUnites" required />
           </label>
           <label>Motif
-            <input id="perteMotif" placeholder="Ex: DLC, casse, etc."/>
+            <input id="perteMotif" placeholder="Ex: DLC, casse, etc." />
           </label>
           <label>Zone
-            <input id="perteZone" list="dlZones" required/>
+            <input id="perteZone" list="dlZones" required />
           </label>
         </form>
         <button id="btnPerteSave" class="btn">Enregistrer la perte</button>
@@ -157,16 +169,16 @@
             </select>
           </label>
           <label>Produit
-            <input id="jProduit" list="dlProduits" required/>
+            <input id="jProduit" list="dlProduits" required />
           </label>
           <label>Quantité
-            <input id="jQte" type="number" step="any" required/>
+            <input id="jQte" type="number" step="any" required />
           </label>
           <label>Unité
-            <input id="jUnite" list="dlUnites" required/>
+            <input id="jUnite" list="dlUnites" required />
           </label>
           <label>Zone
-            <input id="jZone" list="dlZones" required/>
+            <input id="jZone" list="dlZones" required />
           </label>
         </form>
         <button id="btnJSave" class="btn">Enregistrer le mouvement</button>
@@ -177,10 +189,10 @@
         <h2>Inventaire mensuel</h2>
         <div class="grid-2">
           <label>Mois (AAAA-MM)
-            <input id="mMois" placeholder="2025-10" required/>
+            <input id="mMois" placeholder="2025-10" required />
           </label>
           <label>Zone
-            <input id="mZone" list="dlZones" required/>
+            <input id="mZone" list="dlZones" required />
           </label>
         </div>
         <div class="row" style="gap:.5rem;flex-wrap:wrap">
@@ -201,10 +213,10 @@
         <h2>Recettes</h2>
         <div class="grid-2">
           <label>Nom / Code
-            <input id="rSearch"/>
+            <input id="rSearch" />
           </label>
           <label>Multiplicateur
-            <input id="rMul" type="number" step="any" value="1"/>
+            <input id="rMul" type="number" step="any" value="1" />
           </label>
         </div>
         <div id="recipesList" class="mt"></div>
@@ -215,11 +227,11 @@
   <div id="modal" class="modal hidden">
     <div class="panel">
       <h3>Configuration API</h3>
-      <label>API URL (WebApp /exec)<br/>
-        <input id="cfgApiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec"/>
+      <label>API URL (WebApp /exec)<br />
+        <input id="cfgApiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
       </label>
-      <label>API Key<br/>
-        <input id="cfgApiKey" placeholder="clé API"/>
+      <label>API Key<br />
+        <input id="cfgApiKey" placeholder="clé API" />
       </label>
       <div class="row right mt">
         <button id="btnCfgSave" class="btn">Enregistrer</button>
@@ -233,7 +245,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>
   <script>
-    if('serviceWorker' in navigator){
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }
   </script>
