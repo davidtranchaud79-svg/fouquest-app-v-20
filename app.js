@@ -211,7 +211,7 @@ function applyI18n(){
   const hm = document.querySelector('#route-monthly h2');   if(hm) hm.textContent = t('h_monthly');
   const hr = document.querySelector('#route-recipes h2');   if(hr) hr.textContent = t('h_recipes');
 
-  // dashboard : titre du graphique devient "par produit"
+  // dashboard
   const s1 = document.querySelector('#route-dashboard .card.mt .row h3');
   if(s1) s1.textContent = t('h_prod_value');
   const btnRefresh = document.getElementById('btnRefreshDash'); if(btnRefresh) btnRefresh.textContent = t('btn_refresh');
@@ -267,7 +267,7 @@ function applyI18n(){
   if(cfgBtns[1]) cfgBtns[1].textContent = t('btn_cfg_close');
 }
 
-// branche le select langue (sans reload)
+// langue (sans reload)
 const langSel = document.getElementById('langSel');
 if (langSel) {
   langSel.value = STATE.lang;
@@ -302,7 +302,8 @@ function APIKEY(){ return localStorage.getItem('apiKey')||'' }
 async function apiGET(path, params={}){
   const base=ENDPOINT(); if(!base) return {ok:false,error:'Endpoint manquant'};
   const qs=new URLSearchParams({ path, apiKey:APIKEY(), lang:STATE.lang, ...params }).toString();
-  const r = await fetch(`${base}?${qs}`); return await r.json();
+  const r = await fetch(`${base}?${qs}`);
+  return await r.json();
 }
 
 function toast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2000); }
@@ -515,7 +516,7 @@ function renderStockTable(list){
   if(!list||!list.length){ wrap.innerHTML='—'; return; }
   const q=document.getElementById('stockSearch').value?.toLowerCase()||'';
   const zoneSel = document.getElementById('zoneFilter'); const zf = (zoneSel && zoneSel.value)||'';
-  const filtered = list.filter(r=> (q?`${r.produit||''} ${r.zone||''}`.toLowerCase().includes(q):true) && (zf? (r.zone||'')===zf : true));
+  const filtered = list.filter(r=> (q?`${(r.produit||'')} ${(r.zone||'')}`.toLowerCase().includes(q):true) && (zf? (r.zone||'')===zf : true));
   const tr=filtered.map(r=>`<tr><td>${r.produit||''}</td><td>${r.zone||''}</td><td>${(r.qte||0).toLocaleString()}</td><td>${r.unite||''}</td><td>${(r.valeur||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}</td></tr>`).join('');
   wrap.innerHTML=`<table><thead><tr><th>Produit</th><th>Zone</th><th>Qté</th><th>Unité</th><th>Valeur</th></tr></thead><tbody>${tr}</tbody></table>`;
 }
@@ -720,6 +721,11 @@ function renderMonthlyTable(rows){
   const tr = (rows||[]).map((x,i)=> rowToTR(i, x.produit||'', x.unite||'', x.qte||0)).join('');
   wrap.innerHTML = `<table id="tblMonthly"><thead><tr><th>Produit</th><th>Unité</th><th>Qté</th><th></th></tr></thead><tbody>${tr}</tbody></table>`;
   bindRowButtons();
+
+  // Clavier mobile : inputmode sur les quantités
+  wrap.querySelectorAll('tbody tr td:nth-child(3) input[type="number"]').forEach(inp=>{
+    inp.setAttribute('inputmode','decimal');
+  });
 }
 
 function rowToTR(i, produit, unite, qte){
@@ -753,6 +759,28 @@ function collectMonthlyRows(){
 
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
+// ===== Mobile: forcer l’ouverture du clavier / focus correct =====
+function enableMobileKeyboardFixes(){
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (!isTouch) return;
+
+  // 1) Assure le focus sur tap
+  document.body.addEventListener('touchend', (e)=>{
+    const el = e.target;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA')) {
+      setTimeout(()=>{ el.focus(); el.scrollIntoView({block:'center', behavior:'smooth'}); }, 20);
+    }
+  }, {passive:true});
+
+  // 2) Evite que le scroll recasse le focus
+  const inputs = document.querySelectorAll('input, select, textarea');
+  inputs.forEach(inp=>{
+    inp.addEventListener('focus', ()=>{
+      setTimeout(()=>{ inp.scrollIntoView({block:'center'}); }, 100);
+    });
+  });
+}
+
 document.getElementById('btnLoadZone').onclick = ()=>{ sndClick.play(); loadMonthlyZone(); };
 document.getElementById('btnAddInvRow').onclick = ()=>{
   const tb = document.querySelector('#tblMonthly tbody');
@@ -780,6 +808,7 @@ function init(){
   loadDashboard();
   loadLookups();
   loadRecipes();
+  enableMobileKeyboardFixes();
   setInterval(loadDashboard, 30000);
 }
 init();
