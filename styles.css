@@ -20,6 +20,9 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+* { -webkit-tap-highlight-color: transparent; }
+
 body{
   margin:0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -29,7 +32,7 @@ body{
 }
 
 /* ---------- Layout ---------- */
-.wrap{ display:flex; flex-direction:column; min-height:100dvh; }
+.wrap{ display:flex; flex-direction:column; min-height:100svh; }
 .container{
   width: min(1100px, 92vw);
   margin: 1.25rem auto 3rem;
@@ -128,6 +131,7 @@ input, select{
   color: var(--ink);
   outline:none;
   transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+  font-size: 16px !important; /* empêche le zoom iOS */
 }
 input:focus, select:focus{
   border-color: var(--gold);
@@ -213,13 +217,19 @@ tbody tr:hover{ background: #FFFDF6; }
 
 /* ---------- Gold swipe animation (JS) ---------- */
 #gold-swipe{
-  position: fixed; top:0; left:0; height:4px; width:0; z-index:70;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  position: fixed;
+  top:0; left:0;
+  height:5px;
+  width:0;
+  z-index:70;
+  background: linear-gradient(90deg, rgba(255,215,130,.1), var(--gold), rgba(255,215,130,.1));
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(201,162,39,.45);
 }
 @keyframes swipe{
   0%{ width:0; left:0; opacity:0; }
   10%{ opacity:1; }
-  50%{ width:100%; left:0; }
+  50%{ width:100%; left:0; opacity:1; }
   100%{ width:0; left:100%; opacity:0; }
 }
 
@@ -252,12 +262,22 @@ tbody tr:hover{ background: #FFFDF6; }
 
 /* ---------- Fixed chart size ---------- */
 #chartStockZones {
-  width: 900px;
-  height: 340px;
-  max-width: none;
+  width: 900px;      /* largeur figée */
+  height: 340px;     /* hauteur figée */
+  max-width: none;   /* empêche le shrink */
   display: block;
 }
 .card canvas#chartStockZones { display: block; }
+
+/* (NOUVEAU) Graphique pertes 7j */
+#chartLoss7 {
+  width: 900px;
+  height: 280px;
+  max-width: none;
+  display: block;
+}
+.card canvas#chartLoss7 { display: block; }
+
 .card { overflow-x: auto; }
 
 /* ---------- Responsive ---------- */
@@ -279,26 +299,7 @@ tbody tr:hover{ background: #FFFDF6; }
 input, select, textarea {
   -webkit-user-select: text !important;
   touch-action: manipulation !important;
-  font-size: 16px !important; /* empêche le zoom iOS */
 }
-
-.card input, .card select {
-  transform: none !important;
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* Stabilité du viewport sur mobiles */
-html { -webkit-text-size-adjust: 100%; }
-* { -webkit-tap-highlight-color: transparent; }
-.wrap { min-height: 100svh; }
-
-/* Fix clavier iOS / Android */
-input, select, textarea {
-  -webkit-user-select: text !important;
-  touch-action: manipulation !important;
-}
-
 .card input, .card select {
   transform: none !important;
   position: relative !important;
