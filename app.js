@@ -783,13 +783,3 @@ function init(){
   setInterval(loadDashboard, 30000);
 }
 init();
-
-// === Fix affichage clavier mobile (focus auto & scroll) ===
-document.addEventListener('focusin', (e) => {
-  const tag = e.target.tagName.toLowerCase();
-  if (['input','select','textarea'].includes(tag)) {
-    setTimeout(() => {
-      try { e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e){}
-    }, 150);
-  }
-});
