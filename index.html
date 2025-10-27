@@ -2,14 +2,10 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <title>Fouquet’s Stock &amp; Pertes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fouquet’s Stock & Pertes</title>
 
   <link rel="manifest" href="manifest.webmanifest" />
- 
   <meta name="theme-color" content="#5A0D0D" />
 
   <!-- iPhone / A2HS tweaks -->
@@ -22,7 +18,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Garde: barre de progression or en haut -->
+  <!-- Garde: barre dorée -->
   <div id="gold-swipe"></div>
 
   <div id="loader" class="hidden"><div class="ring"></div></div>
@@ -36,9 +32,6 @@
       <div class="hero-overlay"></div>
 
       <div class="hero-content">
-        <!-- NEW: sceau doré centré -->
-        <div id="gold-seal" aria-hidden="true"></div>
-
         <img class="logo" src="icons/logo-fouquets.png" alt="Fouquet's" />
         <h1>Fouquet’s Stock &amp; Pertes</h1>
 
@@ -93,23 +86,26 @@
           </div>
         </div>
 
-        <div class="card mt">
-          <div class="row">
-            <h3>Valeur par zone</h3>
-            <button class="btn" id="btnRefreshDash">Rafraîchir</button>
+        <!-- Double graphique : Stock & Pertes côte à côte -->
+        <div class="grid-2 mt">
+          <div class="card">
+            <div class="row">
+              <h3>Valeur par zone</h3>
+              <button class="btn" id="btnRefreshDash">Rafraîchir</button>
+            </div>
+            <canvas id="chartStockZones" height="340"></canvas>
           </div>
-          <canvas id="chartStockZones" height="200"></canvas>
+
+          <div class="card">
+            <div class="row" style="gap:.75rem; flex-wrap:wrap">
+              <h3>Pertes 7 jours</h3>
+              <button class="btn" id="btnRefreshLoss">Rafraîchir</button>
+            </div>
+            <canvas id="chartLoss7" height="340"></canvas>
+          </div>
         </div>
 
-        <!-- Graphique pertes 7 jours -->
-        <div class="card mt">
-          <div class="row" style="gap:.75rem; flex-wrap:wrap">
-            <h3>Pertes 7 jours</h3>
-            <button class="btn" id="btnRefreshLoss">Rafraîchir</button>
-          </div>
-          <canvas id="chartLoss7"></canvas>
-        </div>
-
+        <!-- Tableaux -->
         <div class="card mt">
           <div class="row" style="gap:.75rem; flex-wrap:wrap">
             <h3>Stock par zone</h3>
@@ -223,6 +219,7 @@
     </main>
   </div>
 
+  <!-- MODAL CONFIG -->
   <div id="modal" class="modal hidden">
     <div class="panel">
       <h3>Configuration API</h3>
