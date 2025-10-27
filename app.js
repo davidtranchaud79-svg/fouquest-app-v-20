@@ -877,6 +877,33 @@ document.getElementById('btnSaveInv').onclick = async ()=>{
   if(r.ok) sndOk.play();
 };
 
+// ===== Service Worker (PWA Offline) =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swUrl = '/sw.js'; // <- adapte si ton site n'est pas servi à la racine
+    navigator.serviceWorker.register(swUrl, { scope: '/' })
+      .then(reg => {
+        // Mise à jour auto si un nouveau SW arrive :
+        if (reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              // Nouvelle version prête (tu peux afficher un toast si tu veux)
+              // toast('🔄 Mise à jour disponible — relancez l’app');
+            }
+          });
+        });
+      })
+      .catch(err => console.error('SW register error', err));
+  });
+}
+
+// (optionnel) petit helper pour afficher un état réseau
+window.addEventListener('online',  () => toast('🟢 En ligne'));
+window.addEventListener('offline', () => toast('🔴 Hors ligne — données en cache'));
+
 // ===== Init =====
 function init(){
   showRoute('dashboard');
