@@ -862,7 +862,7 @@ function renderLossMonthlyChartsFromData(series){
 // ===== Service Worker (PWA Offline) =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swUrl = '/sw.js';
+    const swUrl = './sw.js';
     navigator.serviceWorker.register(swUrl, { scope: '/' })
       .catch(err => console.error('SW register error', err));
   });
