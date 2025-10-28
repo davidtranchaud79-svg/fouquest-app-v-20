@@ -215,230 +215,15 @@ tbody tr:hover{ background: #FFFDF6; }
 }
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
-/* ---------- Golden seal in hero (F + s) ---------- */
-.hero-content{
-  display:flex;             /* ensure vertical stacking + centering */
-  flex-direction:column;
-  align-items:center;
-  gap:.6rem;
-}
-
-#gold-seal{
-  position: relative;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  margin: -26px auto 4px;   /* slightly overlaps the title area */
-  background:
-    radial-gradient(circle at 30% 30%, #FBE9A0 0%, #E8CF78 35%, #C9A227 60%, #9E7C1C 100%);
-  box-shadow:
-    inset 0 0 16px rgba(255,255,255,.55),
-    0 8px 22px rgba(0,0,0,.28),
-    0 0 22px rgba(255,210,120,.6);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family: "Playfair Display", "Didot", Georgia, serif;
-  color:#fffaf0;
-  user-select:none;
-  -webkit-user-select:none;
-  animation: sealGlow 5s ease-in-out infinite;
-}
-
-#gold-seal::before{
-  content:"F";
-  font-size: 46px;
-  font-weight: 700;
-  letter-spacing:-0.02em;
-  text-shadow:
-    0 1px 0 #c3a232,
-    0 2px 6px rgba(0,0,0,.35),
-    0 0 16px rgba(255,230,160,.75);
-}
-
-#gold-seal::after{
-  content:"s";
-  position:absolute;
-  bottom: 28%;
-  right: 36%;
-  font-size: 15px;
-  font-weight: 600;
-  color:#fff6d0;
-  text-shadow:
-    0 1px 0 #a48422,
-    0 0 6px rgba(255,220,150,.85);
-}
-
-@keyframes sealGlow{
-  0%,100%{
-    transform: scale(1);
-    box-shadow:
-      inset 0 0 16px rgba(255,255,255,.55),
-      0 8px 22px rgba(0,0,0,.28),
-      0 0 22px rgba(255,210,120,.6);
-  }
-  50%{
-    transform: scale(1.06);
-    box-shadow:
-      inset 0 0 22px rgba(255,255,255,.7),
-      0 12px 28px rgba(0,0,0,.35),
-      0 0 36px rgba(255,235,170,.9);
-  }
-}
-
-/* Responsive sizes for the seal */
-@media (max-width: 600px){
-  #gold-seal{ width: 88px; height: 88px; margin: -18px auto 2px; }
-  #gold-seal::before{ font-size: 36px; }
-  #gold-seal::after{ font-size: 13px; bottom: 30%; right: 38%; }
-}
-
-/* ---------- Utilities ---------- */
-.hidden{ display:none !important; }
-.mt{ margin-top: .75rem; }
-
-/* ---------- Inputs inside tables (inventaire mensuel) ---------- */
-#tblMonthly input{
-  width:100%;
-  padding:.5rem .55rem; border-radius:10px;
-  border:1px solid rgba(0,0,0,.12);
-  background: #fff;
-}
-#tblMonthly .btnRowDel{
-  padding:.35rem .6rem; border-radius: 10px;
-  background:#fff1f1; border-color:#f3c2c2; color:#992b2b;
-}
-#tblMonthly .btnRowDel:hover{ background:#ffe7e7; }
-
-/* ---------- Search & filter ---------- */
-#stockSearch, #rSearch{
-  width: 100%;
-  margin: .5rem 0;
-  background: #fff;
-}
-#zoneFilter{
-  min-width: 160px;
-}
-
-/* ---------- Fixed chart size ---------- */
-#chartStockZones {
-  width: 900px;      /* largeur figée */
-  height: 340px;     /* hauteur figée */
-  max-width: none;   /* empêche le shrink */
-  display: block;
-}
-.card canvas#chartStockZones { display: block; }
-
-/* (NOUVEAU) Graphique pertes 7j */
-#chartLoss7 {
-  width: 900px;
-  height: 280px;
-  max-width: none;
-  display: block;
-}
-.card canvas#chartLoss7 { display: block; }
-
-.card { overflow-x: auto; }
-
-/* ---------- Responsive ---------- */
-@media (max-width: 980px){
-  .kpis{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .grid-2{ grid-template-columns: 1fr; }
-  .rec-head{ flex-direction:column; align-items:flex-start; }
-  .rec-money{ text-align:left; }
-  .hero{ min-height: 44vh; }
-}
-
-@media (max-width: 640px){
-  nav.tabs{ gap:.35rem; }
-  .btn{ padding:.5rem .7rem; }
-  .hero .logo{ width: 110px; }
-}
-
-/* ---------- Fix clavier mobile + stabilité viewport ---------- */
-input, select, textarea {
-  -webkit-user-select: text !important;
-  touch-action: manipulation !important;
-}
-.card input, .card select {
-  transform: none !important;
-  position: relative !important;
-  z-index: 2 !important;
-}
-/* --- supprime l'ancien rond décoratif du hero (quelque soit son implémentation) --- */
-.hero::before,
-.hero::after,
-.hero-content::before,
-.hero-content::after,
-#hero-ring, .hero-ring, .gold-ring {
-  display: none !important;
-  content: none !important;
-}
-
-/* --- sceau doré centré sous le logo --- */
-#gold-seal{
-  position: absolute;
-  left: 50%;
-  top: clamp(68px, 14vh, 120px);      /* position verticale stable desktop/mobile */
-  transform: translate(-50%, -30%);
-  z-index: 3;
-
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background:
-    radial-gradient(120% 90% at 30% 30%, #FFE08C 0%, #E6C057 35%, #C9A227 60%, #A47D1F 100%);
-  box-shadow:
-    0 10px 22px rgba(0,0,0,.25),
-    inset 0 0 0 2px rgba(255,255,255,.35),
-    inset 0 -10px 18px rgba(0,0,0,.10);
-}
-#gold-seal::before{
-  content: "FS";                       /* F + s stylisés */
-  font-family: "Times New Roman", Georgia, serif;
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: .5px;
-  color: #FFF9E6;
-  text-shadow:
-    0 1px 0 #9a7314,
-    0 0 22px rgba(255,224,140,.9);
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-@media (max-width: 640px){
-  #gold-seal{
-    width: 60px;
-    height: 60px;
-    top: clamp(56px, 12vh, 100px);
-  }
-  #gold-seal::before{ font-size: 18px; }
-}
-/* ---- Neutralise TOUT ancien "ring" décoratif dans le hero (sans toucher au loader) ---- */
-.hero .ring,
-.hero [class*="ring"],
-.hero::before,
-.hero::after,
-.hero-content::before,
-.hero-content::after,
-#hero-ring, .hero-ring, .gold-ring {
-  display: none !important;
-  content: none !important;
-}
-
-/* ---- Sceau doré : centré SOUS le titre, à l'intérieur de .hero-content ---- */
+/* ---------- Sceau doré ---------- */
 .hero-content { position: relative; }
 
 #gold-seal{
   position: absolute;
   left: 50%;
-  top: calc(100% + 8px);              /* juste sous le bloc titre/logo */
+  top: calc(100% + 8px);
   transform: translateX(-50%);
   z-index: 3;
-
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -450,14 +235,12 @@ input, select, textarea {
     inset 0 -10px 18px rgba(0,0,0,.10);
 }
 
-/* Monogramme "FS" */
 #gold-seal::before{
   content: "FS";
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-
   font-family: "Times New Roman", Georgia, serif;
   font-weight: 700;
   font-size: 22px;
@@ -475,4 +258,77 @@ input, select, textarea {
     top: calc(100% + 6px);
   }
   #gold-seal::before{ font-size: 18px; }
+}
+
+/* ---------- Fix clavier mobile ---------- */
+input, select, textarea {
+  -webkit-user-select: text !important;
+  touch-action: manipulation !important;
+}
+.card input, .card select {
+  transform: none !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* ---------- Fixed chart size ---------- */
+#chartStockZones { width:900px; height:340px; max-width:none; display:block; }
+#chartLoss7 { width:900px; height:280px; max-width:none; display:block; }
+
+/* ---------- Responsive ---------- */
+.card { overflow-x: auto; }
+
+@media (max-width:980px){
+  .kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .grid-2{ grid-template-columns:1fr; }
+  .rec-head{ flex-direction:column; align-items:flex-start; }
+  .rec-money{ text-align:left; }
+  .hero{ min-height:44vh; }
+}
+@media (max-width:640px){
+  nav.tabs{ gap:.35rem; }
+  .btn{ padding:.5rem .7rem; }
+  .hero .logo{ width:110px; }
+}
+
+/* =========================================================
+   Section : Pertes mensuelles (poids + valeur)
+   ========================================================= */
+.card.loss-monthly {
+  display:flex;
+  flex-direction:column;
+  gap:1rem;
+  overflow-x:auto;
+}
+
+#chartLossMonthKg,
+#chartLossMonthEUR {
+  width:900px;
+  height:260px;
+  max-width:none;
+  display:block;
+}
+
+.card.loss-monthly .row h3 {
+  flex:1;
+  font-size:1.1rem;
+  color:var(--primary-700);
+}
+
+.card.loss-monthly .row button {
+  background:var(--gold);
+  border-color:var(--gold-700);
+  color:#1B1201;
+}
+.card.loss-monthly .row button:hover {
+  background:var(--gold-700);
+  color:#fffaf0;
+}
+
+@media (max-width:980px){
+  #chartLossMonthKg,
+  #chartLossMonthEUR {
+    width:100%;
+    height:auto;
+  }
 }
