@@ -1,4 +1,4 @@
-// Fouquet's Stock & Pertes v10.2 — Frontend
+// Fouquet's Stock & Pertes v10.3 — Frontend (base David + double graphique pertes mensuelles)
 
 // ===== Lang & état =====
 const STATE = { lang: localStorage.getItem('lang') || 'fr' };
@@ -197,21 +197,18 @@ function applyI18n(){
   const setAll = (selector, txt) =>
     document.querySelectorAll(selector).forEach(el => el.textContent = txt);
 
-  // onglets (nav + hero)
   setAll('[data-route-link="dashboard"]', t('tab_dashboard'));
   setAll('[data-route-link="losses"]',    t('tab_losses'));
   setAll('[data-route-link="daily"]',     t('tab_daily'));
   setAll('[data-route-link="monthly"]',   t('tab_monthly'));
   setAll('[data-route-link="recipes"]',   t('tab_recipes'));
 
-  // titres sections
   const hd = document.querySelector('#route-dashboard h2'); if(hd) hd.textContent = t('h_dashboard');
   const hl = document.querySelector('#route-losses h2');    if(hl) hl.textContent = t('h_losses');
   const hj = document.querySelector('#route-daily h2');     if(hj) hj.textContent = t('h_daily');
   const hm = document.querySelector('#route-monthly h2');   if(hm) hm.textContent = t('h_monthly');
   const hr = document.querySelector('#route-recipes h2');   if(hr) hr.textContent = t('h_recipes');
 
-  // dashboard
   const s1 = document.querySelector('#route-dashboard .card.mt .row h3');
   if(s1) s1.textContent = t('h_prod_value');
   const btnRefresh = document.getElementById('btnRefreshDash'); if(btnRefresh) btnRefresh.textContent = t('btn_refresh');
@@ -226,7 +223,6 @@ function applyI18n(){
   const btnExp = document.getElementById('btnExportZone');
   if(btnExp) btnExp.textContent = t('btn_export_csv');
 
-  // pertes
   const btnLoss = document.getElementById('btnPerteSave'); if(btnLoss) btnLoss.textContent = t('btn_save_loss');
   const lblsLoss = document.querySelectorAll('#formPerte label');
   if(lblsLoss.length >= 5){
@@ -237,7 +233,6 @@ function applyI18n(){
     lblsLoss[4].childNodes[0].nodeValue = t('lbl_zone');
   }
 
-  // journalier
   const btnMv = document.getElementById('btnJSave'); if(btnMv) btnMv.textContent = t('btn_save_move');
   const lblsDaily = document.querySelectorAll('#formDaily label');
   if(lblsDaily.length >= 5){
@@ -248,7 +243,6 @@ function applyI18n(){
     lblsDaily[4].childNodes[0].nodeValue = t('lbl_zone');
   }
 
-  // mensuel
   const lblMonth = document.querySelector('#route-monthly .grid-2 label:first-child');
   if(lblMonth){ lblMonth.childNodes[0].nodeValue = t('lbl_month'); }
   const btnGen = document.getElementById('btnGenZone');   if(btnGen)  btnGen.textContent  = t('btn_gen_sheet');
@@ -256,7 +250,6 @@ function applyI18n(){
   const btnAdd  = document.getElementById('btnAddInvRow');if(btnAdd)  btnAdd.textContent  = t('btn_add_row');
   const btnSave = document.getElementById('btnSaveInv');  if(btnSave) btnSave.textContent = t('btn_save_inv');
 
-  // modal config
   const panel = document.querySelector('#modal .panel h3'); if(panel) panel.textContent = t('cfg_title');
   const cfgUrlLbl = document.querySelector('#modal .panel label:nth-of-type(1)');
   if(cfgUrlLbl){ cfgUrlLbl.childNodes[0].nodeValue = t('cfg_url') + "\n"; }
@@ -265,20 +258,6 @@ function applyI18n(){
   const cfgBtns = document.querySelectorAll('#modal .panel .row button');
   if(cfgBtns[0]) cfgBtns[0].textContent = t('btn_cfg_save');
   if(cfgBtns[1]) cfgBtns[1].textContent = t('btn_cfg_close');
-}
-
-// langue (sans reload)
-const langSel = document.getElementById('langSel');
-if (langSel) {
-  langSel.value = STATE.lang;
-  langSel.addEventListener('change', e=>{
-    STATE.lang = e.target.value || 'fr';
-    localStorage.setItem('lang', STATE.lang);
-    applyI18n();
-    loadDashboard();
-    loadRecipes();
-    toast(t('lang_applied'));
-  });
 }
 
 // ===== Config API =====
@@ -296,7 +275,6 @@ function openModal(){
   document.getElementById('cfgApiUrl').value=localStorage.getItem('apiUrl')||'';
   document.getElementById('cfgApiKey').value=localStorage.getItem('apiKey')||'';
 }
-
 function ENDPOINT(){ return (localStorage.getItem('apiUrl')||'').replace(/\/$/,'') }
 function APIKEY(){ return localStorage.getItem('apiKey')||'' }
 async function apiGET(path, params={}){
@@ -306,6 +284,7 @@ async function apiGET(path, params={}){
   return await r.json();
 }
 
+// ===== UI helpers =====
 function toast(msg){ toastEl.textContent=msg; toastEl.classList.remove('hidden'); setTimeout(()=>toastEl.classList.add('hidden'),2000); }
 function swipe(){ goldSwipe.style.animation='swipe .6s ease'; setTimeout(()=>goldSwipe.style.animation='',700); }
 
@@ -320,6 +299,7 @@ function showRoute(id){
   if(id==='recipes')   loadRecipes();
 }
 
+// ===== Datalists / selects =====
 function fillDL(id, items){ const dl=document.getElementById(id); if(!dl) return; dl.innerHTML=(items||[]).map(v=>`<option value="${v}">`).join(''); }
 function fillSelectFromList(sel, items){ sel.innerHTML='<option value="">Toutes</option>'+ (items||[]).map(v=>`<option value="${v}">${v}</option>`).join(''); }
 
@@ -338,7 +318,7 @@ async function loadLookups(){
   } catch(e){ console.error(e); }
 }
 
-// ===== Helpers poids =====
+// ===== Poids helpers =====
 function toKg(q, u){
   const unit = String(u||'').toLowerCase().trim();
   const x = Number(q)||0; if(!x) return 0;
@@ -346,12 +326,11 @@ function toKg(q, u){
   if (unit==='g'  || unit==='gramme'     || unit==='grammes')     return x/1000;
   if (unit==='mg' || unit==='milligramme'|| unit==='milligrammes') return x/1e6;
   if (unit==='t'  || unit==='tonne'      || unit==='tonnes')      return x*1000;
-  return 0; // on ignore pcs/u/l…
+  return 0; // ignore pcs/u/l…
 }
 
-// ===== Aggrégations pour le graphique multi-courbes =====
+// ===== Agrégations produit/zone (graph principal) =====
 function productZoneKgFromRows(rows){
-  // Map produit -> Map zone -> kg
   const m = new Map();
   (rows||[]).forEach(r=>{
     const prod = r.produit || '(Sans nom)';
@@ -364,7 +343,6 @@ function productZoneKgFromRows(rows){
   return m;
 }
 
-// (conserve pour la table “par zone” existante)
 function aggregateZones(data){
   if(Array.isArray(data?.zones) && data.zones.length) {
     return data.zones.map(z=>({ zone:z.zone||'(Sans zone)', valeur:+(z.valeur||0), lignes: z.lignes||null }));
@@ -380,11 +358,9 @@ function aggregateZones(data){
   return [...map.values()].sort((a,b)=>b.valeur-a.valeur);
 }
 
-// ======== CHART STATE (stabilité zones + produits) ========
+// ===== CHARTS (stabilité & tailles figées) =====
 let CHARTS = {};
-const TOP_N = 10; // nb de produits affichés en courbes
-
-// ——> Taille figée du graphe principal
+const TOP_N = 10;
 const CHART_SIZE = { w: 900, h: 340 };
 function ensureFixedChartSize() {
   const canvas = document.getElementById('chartStockZones');
@@ -392,61 +368,24 @@ function ensureFixedChartSize() {
   if (canvas.width !== CHART_SIZE.w)  canvas.width  = CHART_SIZE.w;
   if (canvas.height !== CHART_SIZE.h) canvas.height = CHART_SIZE.h;
 }
-
-// —— Pertes 7j : taille figée du canvas pertes (si présent)
-function ensureLossChartSize(){
+function ensureLoss7Size(){
   const c = document.getElementById('chartLoss7');
   if(!c) return;
   if (c.width !== 900) c.width = 900;
   if (c.height !== 280) c.height = 280;
 }
-
-// —— Rend/Met à jour le graphique des pertes (barres) — optionnel
-function renderLossChartFromData(series){
-  const el = document.getElementById('chartLoss7');
-  if(!el || !window.Chart) return;
-  ensureLossChartSize();
-
-  const labels = series.map(s => s.date);
-  const data   = series.map(s => Math.round((s.valeur||0)*100)/100);
-
-  if(!window.CHARTS) window.CHARTS = {};
-
-  if(!CHARTS.loss7){
-    CHARTS.loss7 = new Chart(el, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Pertes (€)', data }] },
-      options: {
-        responsive: false,
-        animation: false,
-        scales: {
-          y: {
-            ticks: { callback: v => v.toLocaleString(undefined,{style:'currency',currency:'EUR'}) }
-          }
-        },
-        plugins: {
-          legend: { display:false },
-          tooltip: {
-            callbacks: {
-              label: ctx => (ctx.parsed.y||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})
-            }
-          }
-        }
-      }
-    });
-  } else {
-    CHARTS.loss7.data.labels = labels;
-    CHARTS.loss7.data.datasets[0].data = data;
-    CHARTS.loss7.update('none');
-  }
+function ensureLossMonthlySizes(){
+  const kg = document.getElementById('chartLossMonthKg');
+  const eu = document.getElementById('chartLossMonthEUR');
+  if (kg){ if(kg.width!==900) kg.width=900; if(kg.height!==260) kg.height=260; }
+  if (eu){ if(eu.width!==900) eu.width=900; if(eu.height!==260) eu.height=260; }
 }
 
-const CHART_STATE = {
-  labelsZones: null,
-  labelsProducts: null
-};
+const CHART_STATE = { labelsZones: null, labelsProducts: null };
 
+// ===== Dashboard loader =====
 async function loadDashboard(){
+  // STOCK LIVE + graph multi-courbes
   const sj = await apiGET('stock_journalier');
   if(sj?.ok){
     const d=sj.data||{};
@@ -454,86 +393,55 @@ async function loadDashboard(){
     const delta=d.deltaToday||0; const sign=delta>0?'+':'';
     document.getElementById('kpiStockDelta').textContent=`${t('delta_day')}${sign}${(delta||0).toLocaleString(undefined,{style:'currency',currency:'EUR'})}`;
 
-    // === Graphique multi-courbes : 1 courbe par produit (Top N) — poids(kg) par zone ===
     if(window.Chart){
       const mProdZone = productZoneKgFromRows(d.rows || []);
 
-      // Figer les ZONES au 1er rendu (ordre = zones les plus lourdes)
       if (!CHART_STATE.labelsZones) {
         const zoneTotals = new Map();
         (d.rows||[]).forEach(r=>{
           const z = r.zone || '(Sans zone)';
           zoneTotals.set(z, (zoneTotals.get(z)||0) + toKg(r.qte, r.unite));
         });
-        const zonesSorted = [...zoneTotals.entries()]
-          .sort((a,b)=> b[1]-a[1])
-          .map(([z])=>z);
+        const zonesSorted = [...zoneTotals.entries()].sort((a,b)=> b[1]-a[1]).map(([z])=>z);
         CHART_STATE.labelsZones = zonesSorted.length ? zonesSorted : ['(Sans zone)'];
       }
 
-      // Figer les PRODUITS au 1er rendu (Top N par poids total)
       if (!CHART_STATE.labelsProducts) {
         const prodTotals = [...mProdZone.entries()].map(([p, zm]) => ({
           produit: p,
           kg: [...zm.values()].reduce((t,x)=>t+x,0)
         }));
-        CHART_STATE.labelsProducts = prodTotals
-          .sort((a,b)=> b.kg - a.kg)
-          .slice(0, TOP_N)
-          .map(x=>x.produit);
+        CHART_STATE.labelsProducts = prodTotals.sort((a,b)=> b.kg - a.kg).slice(0, TOP_N).map(x=>x.produit);
       }
 
-      // Construire datasets (un par produit) alignés sur les zones figées
       const labelsX = CHART_STATE.labelsZones;
       const products = CHART_STATE.labelsProducts;
-
       const datasets = products.map(prod => {
         const zm = mProdZone.get(prod) || new Map();
         const data = labelsX.map(z => Math.round(((zm.get(z)||0))*1000)/1000);
-        return {
-          label: prod,
-          data,
-          fill: false,
-          tension: 0.25,
-          pointRadius: 2,
-          pointHoverRadius: 4
-        };
+        return { label: prod, data, fill: false, tension: 0.25, pointRadius: 2, pointHoverRadius: 4 };
       });
 
-      // ——— Taille figée AVANT création/maj du chart
       ensureFixedChartSize();
-
       const ctx = document.getElementById('chartStockZones');
       if (!CHARTS.stockZones) {
         CHARTS.stockZones = new Chart(ctx, {
           type: 'line',
           data: { labels: labelsX, datasets },
           options: {
-            // ——> taille figée : pas de responsive
-            responsive: false,
-            maintainAspectRatio: false,
-            animation: false,
+            responsive: false, maintainAspectRatio: false, animation: false,
             interaction: { mode: 'index', intersect: false },
             scales: {
-              y: {
-                title: { display: true, text: t('chart_y_kg') },
-                ticks: { callback: v => `${v} ${t('chart_y_kg')}` }
-              },
+              y: { title: { display: true, text: t('chart_y_kg') }, ticks: { callback: v => `${v} ${t('chart_y_kg')}` } },
               x: { title: { display: true, text: t('h_stock_zone') } }
             },
             plugins: {
-              tooltip: {
-                animation: false,
-                callbacks: {
-                  label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toLocaleString()} ${t('chart_y_kg')}`
-                }
-              },
+              tooltip: { animation: false, callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toLocaleString()} ${t('chart_y_kg')}` } },
               legend: { display: true }
             }
           }
         });
       } else {
-        // mise à jour « stable » (même taille, mêmes labels)
         ensureFixedChartSize();
         CHARTS.stockZones.data.labels = labelsX;
         CHARTS.stockZones.data.datasets = datasets;
@@ -541,51 +449,37 @@ async function loadDashboard(){
       }
     }
 
-    // Table agrégée par zone (inchangée, valeur €)
     renderZonesTable(d);
-
-    // Détail stock (inchangé)
     if(Array.isArray(d.rows)) renderStockTable(d.rows);
   }
 
-  // KPIs (inchangés)
+  // KPIs + pertes 7j
   const k = await apiGET('dashboard_kpis');
   if(k?.ok){
     const kv = k.data||{};
     document.getElementById('kpiMv7').textContent = (kv.mv7?.total||0).toLocaleString();
-    const lossSum = (kv.topLoss7||[]).reduce((t,x)=>t+(x.valeur||0),0);
-    document.getElementById('kpiLoss7').textContent = lossSum.toLocaleString(undefined,{style:'currency',currency:'EUR'});
+    const lossSumTop = (kv.topLoss7||[]).reduce((t,x)=>t+(x.valeur||0),0);
+    document.getElementById('kpiLoss7').textContent = lossSumTop.toLocaleString(undefined,{style:'currency',currency:'EUR'});
     document.getElementById('kpiTop').textContent = (kv.topLoss7?.[0]?.produit||'—');
   }
 
-  // === Graphique pertes 7 jours (si un canvas #chartLoss7 existe) ===
+  // Graphique pertes 7 jours (si canvas)
   try{
-    const kpis = await apiGET('dashboard_kpis'); // re-use endpoint (au cas où k n'était pas ok)
+    const kpis = await apiGET('dashboard_kpis');
     const lossRaw = (kpis?.data?.loss7 || kpis?.data?.topLoss7 || []);
     let series = [];
 
     if (Array.isArray(lossRaw) && lossRaw.length && lossRaw[0]?.date != null) {
-      // Format attendu : [{date:'YYYY-MM-DD', valeur:Number}, ...]
       series = lossRaw.map(x => ({ date: String(x.date), valeur: Number(x.valeur||0) }));
-    } else if (sj?.ok && Array.isArray(sj.data?.rows)) {
-      // Fallback: reconstruire depuis les mouvements PERTE du stock_journalier
-      const rows = sj.data.rows.filter(r => (String(r.type||'').toUpperCase() === 'PERTE'));
-      const byDay = new Map();
-      rows.forEach(r=>{
-        const dRaw = r.date || r.jour || r.day || r.ts || '';
-        const d = String(dRaw).slice(0,10); // YYYY-MM-DD
-        byDay.set(d, (byDay.get(d)||0) + Number(r.valeur||0));
-      });
-      series = [...byDay.entries()]
-        .map(([date,valeur]) => ({date, valeur}))
-        .sort((a,b)=> a.date.localeCompare(b.date))
-        .slice(-7);
     }
-
     if (series.length) renderLossChartFromData(series);
   }catch(e){ console.warn('loss chart build error:', e); }
+
+  // Pertes mensuelles (kg + €) — double graphique
+  await loadLossMonthly();
 }
 
+// ===== Tables =====
 function renderStockTable(list){
   const wrap=document.getElementById('stockTableWrap'); if(!wrap) return;
   if(!list||!list.length){ wrap.innerHTML='—'; return; }
@@ -626,15 +520,15 @@ function exportZonesCSV(rows){
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 
+// ===== Pertes : actions =====
 document.getElementById('stockSearch').addEventListener('input',()=>loadDashboard());
 document.getElementById('btnRefreshDash').onclick=()=>{ sndClick.play(); loadDashboard(); };
-document.getElementById('btnRefreshLoss')?.addEventListener('click', ()=> loadDashboard()); // optionnel
+document.getElementById('btnRefreshLoss')?.addEventListener('click', ()=> loadDashboard());
 const zoneFilterEl = document.getElementById('zoneFilter');
 if(zoneFilterEl){ zoneFilterEl.addEventListener('change', ()=>{ loadDashboard(); }); }
 
 function clearForm(sel){ document.querySelectorAll(sel+' input').forEach(i=> i.value=''); const s = document.querySelector(sel+' select'); if(s) s.selectedIndex=0; }
 
-// ===== Pertes =====
 document.getElementById('btnPerteSave').onclick = async ()=>{
   const body={ type:'PERTE',
     produit: document.getElementById('perteProduit').value.trim(),
@@ -650,7 +544,6 @@ document.getElementById('btnPerteSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// ===== Journalier =====
 document.getElementById('btnJSave').onclick = async ()=>{
   const type=(document.getElementById('jFlux').value||'').toUpperCase();
   const body={ type,
@@ -666,7 +559,6 @@ document.getElementById('btnJSave').onclick = async ()=>{
   loadDashboard();
 };
 
-// ===== Mensuel =====
 document.getElementById('btnGenZone').onclick = async ()=>{
   const mois=document.getElementById('mMois').value.trim();
   const zone=document.getElementById('mZone').value.trim();
@@ -678,7 +570,6 @@ document.getElementById('btnGenZone').onclick = async ()=>{
 
 // ===== Recettes =====
 const RECIPES = { all: [], filtered: [] };
-
 async function loadRecipes(){
   const q = (document.getElementById('rSearch')?.value || '').trim().toLowerCase();
   const res = await apiGET('recettes');
@@ -690,12 +581,10 @@ async function loadRecipes(){
     : RECIPES.all.slice();
   renderRecipesList(RECIPES.filtered);
 }
-
 function renderRecipesList(list){
   const wrap = document.getElementById('recipesList');
   if(!wrap) return;
   if(!list || list.length===0){ wrap.innerHTML = '—'; return; }
-
   wrap.innerHTML = list.map(r => `
     <div class="rec-card" data-id="${r.id||''}" data-name="${escapeHtml(r.nom||'')}">
       <div class="rec-head">
@@ -713,17 +602,14 @@ function renderRecipesList(list){
       </div>
     </div>
   `).join('');
-
   wrap.querySelectorAll('.rec-card').forEach(card=>{
     card.addEventListener('click', async ()=>{
       const detail = card.querySelector('.rec-detail');
       const isHidden = detail.hasAttribute('hidden');
       wrap.querySelectorAll('.rec-detail').forEach(d=> d.setAttribute('hidden',''));
       if(!isHidden) return;
-
       detail.innerHTML = `<div class="rec-loading">Chargement…</div>`;
       detail.removeAttribute('hidden');
-
       const id = card.getAttribute('data-id');
       const name = card.getAttribute('data-name');
       const r = await apiGET('recette_detail', id ? {id} : {nom:name});
@@ -732,7 +618,6 @@ function renderRecipesList(list){
     });
   });
 }
-
 function renderRecipeDetail(container, data){
   const mul = parseFloat(document.getElementById('rMul')?.value)||1;
   const ing = (data.ingredients||[]).map(x=>({
@@ -743,7 +628,6 @@ function renderRecipeDetail(container, data){
     cout: Number(x.cout ?? (Number(x.qte||0)*Number(x.prixUnitaire||0))) * mul
   }));
   const coutTotal = ing.reduce((t,x)=>t+Number(x.cout||0),0);
-
   container.innerHTML = `
     <div class="hint">x${mul} — Coût total: ${coutTotal.toLocaleString(undefined,{style:'currency',currency:'EUR'})}${data.tva?` · TVA ${Number(data.tva)}%`:''}</div>
     <table class="mt">
@@ -763,25 +647,9 @@ function renderRecipeDetail(container, data){
   `;
 }
 
-// Recherche & multiplicateur (Recettes)
-const rSearchEl = document.getElementById('rSearch');
-if(rSearchEl){ rSearchEl.addEventListener('input', ()=> loadRecipes()); }
-const rMulEl = document.getElementById('rMul');
-if(rMulEl){ rMulEl.addEventListener('input', ()=>{
-  const open = document.querySelector('#recipesList .rec-detail:not([hidden])');
-  if(!open) return;
-  const parent = open.closest('.rec-card');
-  const id = parent?.getAttribute('data-id');
-  const name = parent?.getAttribute('data-name');
-  apiGET('recette_detail', id ? {id} : {nom:name}).then(r=>{
-    if(r?.ok) renderRecipeDetail(open, r.data);
-  });
-}); }
-
 // ===== Mensuel (édition) =====
 function monthKey(){ return document.getElementById('mMois').value.trim(); }
 function zoneKey(){ return document.getElementById('mZone').value.trim(); }
-
 async function loadMonthlyZone(){
   const mois = monthKey(), zone = zoneKey();
   if(!mois || !zone){ toast('⛔ Mois et Zone requis.'); return; }
@@ -791,19 +659,15 @@ async function loadMonthlyZone(){
   document.getElementById('monthlyInfo').textContent = `✅ ${r.rows?.length||0} lignes`;
   renderMonthlyTable(r.rows||[]);
 }
-
 function renderMonthlyTable(rows){
   const wrap = document.getElementById('monthlyTableWrap');
   const tr = (rows||[]).map((x,i)=> rowToTR(i, x.produit||'', x.unite||'', x.qte||0)).join('');
   wrap.innerHTML = `<table id="tblMonthly"><thead><tr><th>Produit</th><th>Unité</th><th>Qté</th><th></th></tr></thead><tbody>${tr}</tbody></table>`;
   bindRowButtons();
-
-  // Clavier mobile : inputmode sur les quantités
   wrap.querySelectorAll('tbody tr td:nth-child(3) input[type="number"]').forEach(inp=>{
     inp.setAttribute('inputmode','decimal');
   });
 }
-
 function rowToTR(i, produit, unite, qte){
   return `<tr>
     <td><input list="dlProduits" value="${escapeHtml(produit||'')}"></td>
@@ -812,15 +676,11 @@ function rowToTR(i, produit, unite, qte){
     <td><button class="btn btnRowDel">✕</button></td>
   </tr>`;
 }
-
 function bindRowButtons(){
   document.querySelectorAll('#tblMonthly .btnRowDel').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      btn.closest('tr').remove();
-    });
+    btn.addEventListener('click', ()=>{ btn.closest('tr').remove(); });
   });
 }
-
 function collectMonthlyRows(){
   const rows = [];
   document.querySelectorAll('#tblMonthly tbody tr').forEach(tr => {
@@ -832,79 +692,199 @@ function collectMonthlyRows(){
   });
   return rows;
 }
-
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-// ===== Mobile: forcer l’ouverture du clavier / focus correct =====
+// ===== iOS/A2HS clavier =====
 function enableMobileKeyboardFixes(){
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   if (!isTouch) return;
-
-  // 1) Assure le focus sur tap
   document.body.addEventListener('touchend', (e)=>{
     const el = e.target;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA')) {
       setTimeout(()=>{ el.focus(); el.scrollIntoView({block:'center', behavior:'smooth'}); }, 20);
     }
   }, {passive:true});
-
-  // 2) Evite que le scroll recasse le focus
   const inputs = document.querySelectorAll('input, select, textarea');
   inputs.forEach(inp=>{
-    inp.addEventListener('focus', ()=>{
-      setTimeout(()=>{ inp.scrollIntoView({block:'center'}); }, 100);
-    });
+    inp.addEventListener('focus', ()=>{ setTimeout(()=>{ inp.scrollIntoView({block:'center'}); }, 100); });
   });
 }
 
 document.getElementById('btnLoadZone').onclick = ()=>{ sndClick.play(); loadMonthlyZone(); };
 document.getElementById('btnAddInvRow').onclick = ()=>{
   const tb = document.querySelector('#tblMonthly tbody');
-  if(!tb){
-    renderMonthlyTable([{produit:'', unite:'', qte:0}]);
-  } else {
-    tb.insertAdjacentHTML('beforeend', rowToTR(Date.now(), '', '', 0));
-    bindRowButtons();
-  }
+  if(!tb){ renderMonthlyTable([{produit:'', unite:'', qte:0}]); }
+  else { tb.insertAdjacentHTML('beforeend', rowToTR(Date.now(), '', '', 0)); bindRowButtons(); }
 };
-
 document.getElementById('btnSaveInv').onclick = async ()=>{
   const mois = monthKey(), zone = zoneKey();
   if(!mois || !zone) return toast('⛔ Mois et Zone requis.');
   const rows = collectMonthlyRows();
   const r = await apiGET('inventaire_save_zone', { mois, zone, rows: JSON.stringify(rows) });
-  toast(r.ok? '✅ Inventaire enregistré' : ('⚠️ '+(r.error||'Erreur')));
-  if(r.ok) sndOk.play();
+  toast(r.ok? '✅ Inventaire enregistré' : ('⚠️ '+(r.error||'Erreur'))); if(r.ok) sndOk.play();
 };
+
+// ===== Graphique pertes 7j =====
+function renderLossChartFromData(series){
+  const el = document.getElementById('chartLoss7');
+  if(!el || !window.Chart) return;
+  ensureLoss7Size();
+  const labels = series.map(s => s.date);
+  const data   = series.map(s => Math.round((s.valeur||0)*100)/100);
+  if(!CHARTS.loss7){
+    CHARTS.loss7 = new Chart(el, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Pertes (€)', data }] },
+      options: {
+        responsive: false, animation: false,
+        scales: { y: { ticks: { callback: v => v.toLocaleString(undefined,{style:'currency',currency:'EUR'}) } } },
+        plugins: { legend: { display:false }, tooltip: { callbacks: { label: c => (c.parsed.y||0).toLocaleString(undefined,{style:'currency',currency:'EUR'}) } } }
+      }
+    });
+  } else {
+    CHARTS.loss7.data.labels = labels;
+    CHARTS.loss7.data.datasets[0].data = data;
+    CHARTS.loss7.update('none');
+  }
+}
+
+// ===== Pertes mensuelles (double graphique : kg + €) =====
+async function loadLossMonthly(){
+  // Cherche d'abord dans dashboard_kpis.lossMonthly
+  let series = [];
+  try {
+    const k = await apiGET('dashboard_kpis');
+    if (k?.ok && Array.isArray(k.data?.lossMonthly) && k.data.lossMonthly.length) {
+      series = normalizeLossMonthly(k.data.lossMonthly);
+    }
+  } catch(e){ /* ignore */ }
+
+  // Sinon tente endpoint dédié
+  if (!series.length) {
+    try {
+      const r = await apiGET('losses_monthly', { months: 6 });
+      if (r?.ok && Array.isArray(r.data)) { series = normalizeLossMonthly(r.data); }
+    } catch(e){ /* ignore */ }
+  }
+
+  // Dernier recours : agrège depuis /mouvements (si dispo)
+  if (!series.length) {
+    try {
+      const mv = await apiGET('mouvements', { sinceDays: 185 }); // ~6 mois
+      if (mv?.ok && Array.isArray(mv.data)) { series = buildMonthlyFromMouvements(mv.data); }
+    } catch(e){ /* ignore */ }
+  }
+
+  if (!series.length) return; // pas de canvas/pas de data => on sort proprement
+
+  renderLossMonthlyChartsFromData(series);
+}
+
+function normalizeLossMonthly(arr){
+  // attend [{month:'YYYY-MM', kg:Number, eur:Number}, ...]
+  const clean = (arr||[]).map(x=>({
+    month: String(x.month || x.mois || '').slice(0,7),
+    kg: Number(x.kg || x.poids || 0),
+    eur: Number(x.eur || x.valeur || 0)
+  })).filter(x=>x.month);
+  // garde 6 derniers mois triés
+  return clean.sort((a,b)=> a.month.localeCompare(b.month)).slice(-6);
+}
+
+function buildMonthlyFromMouvements(rows){
+  // rows supposés contenir: timestamp, type, qte, unite, prix
+  const by = new Map();
+  (rows||[]).forEach(r=>{
+    if (String(r.type||'').toUpperCase()!=='PERTE') return;
+    const d = new Date(r.timestamp||r.ts||r.date||r.jour);
+    if(!(d instanceof Date) || isNaN(d)) return;
+    const key = d.toISOString().slice(0,7); // YYYY-MM
+    const kg  = toKg(r.qte, r.unite);
+    const eur = Number(r.qte||0) * Number(r.prix||0);
+    const cur = by.get(key) || { kg:0, eur:0 };
+    cur.kg  += kg||0;
+    cur.eur += eur||0;
+    by.set(key, cur);
+  });
+  const arr = [...by.entries()].map(([month, v])=>({month, kg: v.kg, eur: v.eur}))
+                .sort((a,b)=> a.month.localeCompare(b.month))
+                .slice(-6);
+  return arr;
+}
+
+function renderLossMonthlyChartsFromData(series){
+  ensureLossMonthlySizes();
+  const kgEl = document.getElementById('chartLossMonthKg');
+  const euEl = document.getElementById('chartLossMonthEUR');
+  if (!window.Chart || (!kgEl && !euEl)) return;
+
+  const labels = series.map(s=>s.month);
+  const dataKg = series.map(s=> Math.round((s.kg||0)*1000)/1000);
+  const dataEu = series.map(s=> Math.round((s.eur||0)*100)/100);
+
+  if (kgEl){
+    if(!CHARTS.lossMonthKg){
+      CHARTS.lossMonthKg = new Chart(kgEl, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Pertes (kg)', data: dataKg }] },
+        options: {
+          responsive:false, animation:false,
+          scales:{ y:{ title:{display:true,text:'kg'} } },
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>`${c.parsed.y?.toLocaleString()} kg`} } }
+        }
+      });
+    } else {
+      CHARTS.lossMonthKg.data.labels = labels;
+      CHARTS.lossMonthKg.data.datasets[0].data = dataKg;
+      CHARTS.lossMonthKg.update('none');
+    }
+  }
+
+  if (euEl){
+    if(!CHARTS.lossMonthEUR){
+      CHARTS.lossMonthEUR = new Chart(euEl, {
+        type: 'line',
+        data: { labels, datasets: [{ label:'Pertes (€)', data: dataEu, fill:false, tension:.25, pointRadius:2 }] },
+        options: {
+          responsive:false, animation:false,
+          scales:{ y:{ ticks:{ callback:v=>v.toLocaleString(undefined,{style:'currency',currency:'EUR'}) } } },
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=> (c.parsed.y||0).toLocaleString(undefined,{style:'currency',currency:'EUR'}) } } }
+        }
+      });
+    } else {
+      CHARTS.lossMonthEUR.data.labels = labels;
+      CHARTS.lossMonthEUR.data.datasets[0].data = dataEu;
+      CHARTS.lossMonthEUR.update('none');
+    }
+  }
+}
 
 // ===== Service Worker (PWA Offline) =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swUrl = '/sw.js'; // <- adapte si ton site n'est pas servi à la racine
+    const swUrl = '/sw.js';
     navigator.serviceWorker.register(swUrl, { scope: '/' })
-      .then(reg => {
-        // Mise à jour auto si un nouveau SW arrive :
-        if (reg.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
-        reg.addEventListener('updatefound', () => {
-          const nw = reg.installing;
-          if (!nw) return;
-          nw.addEventListener('statechange', () => {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nouvelle version prête (tu peux afficher un toast si tu veux)
-              // toast('🔄 Mise à jour disponible — relancez l’app');
-            }
-          });
-        });
-      })
       .catch(err => console.error('SW register error', err));
   });
 }
 
-// (optionnel) petit helper pour afficher un état réseau
+// Réseau
 window.addEventListener('online',  () => toast('🟢 En ligne'));
 window.addEventListener('offline', () => toast('🔴 Hors ligne — données en cache'));
 
 // ===== Init =====
+const langSel = document.getElementById('langSel');
+if (langSel) {
+  langSel.value = STATE.lang;
+  langSel.addEventListener('change', e=>{
+    STATE.lang = e.target.value || 'fr';
+    localStorage.setItem('lang', STATE.lang);
+    applyI18n();
+    loadDashboard();
+    loadRecipes();
+    toast(t('lang_applied'));
+  });
+}
 function init(){
   showRoute('dashboard');
   applyI18n();
