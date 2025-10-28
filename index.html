@@ -104,7 +104,19 @@
             <canvas id="chartLoss7" height="340"></canvas>
           </div>
         </div>
-
+        
+<!-- Pertes mensuelles (poids & valeur) -->
+<div class="card mt">
+  <div class="row" style="gap:.75rem;flex-wrap:wrap">
+    <h3>Pertes mensuelles — Poids (kg) & Valeur (€)</h3>
+    <button class="btn" onclick="loadDashboard()">Rafraîchir</button>
+  </div>
+  <div style="display:grid;gap:12px">
+    <canvas id="chartLossMonthKg"></canvas>
+    <canvas id="chartLossMonthEUR"></canvas>
+  </div>
+</div>
+        
         <!-- Tableaux -->
         <div class="card mt">
           <div class="row" style="gap:.75rem; flex-wrap:wrap">
