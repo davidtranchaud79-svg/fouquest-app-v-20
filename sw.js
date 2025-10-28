@@ -1,8 +1,9 @@
-/* ===== Fouquet’s Suite — Service Worker (offline + cache intelligent) ===== */
+/* ===== Fouquet’s Suite — Service Worker v10.3 ===== */
+/* Corrige les erreurs 404 et 206 partielles sur GitHub Pages */
 
-const APP_VERSION = 'v10.2';
-const CACHE_SHELL = `fqs-shell-${APP_VERSION}`;
-const FILES = [
+const APP_VERSION = 'v10.3';
+const CACHE_NAME = `fqs-cache-${APP_VERSION}`;
+const ASSETS = [
   './',
   './index.html',
   './styles.css',
@@ -12,34 +13,50 @@ const FILES = [
   './icons/icon-512.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_SHELL).then(c => c.addAll(FILES))
+// Installation (cache initial)
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => Promise.allSettled(
+        ASSETS.map(url => 
+          fetch(url, { cache: 'reload' })
+            .then(resp => (resp.ok ? cache.put(url, resp) : null))
+            .catch(() => null)
+        )
+      ))
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+// Activation (nettoyage des anciens caches)
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => (k !== CACHE_SHELL ? caches.delete(k) : null)))
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  // Ne gère que les requêtes GET
+// Stratégie de récupération
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
   if (req.method !== 'GET') return;
-  e.respondWith(
-    caches.match(req).then(cached =>
-      cached ||
-      fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE_SHELL).then(c => c.put(req, copy));
-        return res;
-      }).catch(() => cached || new Response('', { status: 503 }))
-    )
+
+  event.respondWith(
+    caches.match(req).then(cached => {
+      const networkFetch = fetch(req)
+        .then(resp => {
+          // Ignore les réponses partielles 206
+          if (!resp || !resp.ok || resp.status === 206) return resp;
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+          return resp;
+        })
+        .catch(() => cached || new Response('', { status: 503 }));
+
+      return cached || networkFetch;
+    })
   );
 });
