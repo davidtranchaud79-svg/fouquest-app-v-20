@@ -3,24 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Fouquet’s Stock & Pertes</title>
+  <title>Fouquet’s Stock &amp; Pertes</title>
 
+  <!-- Manifest & couleurs -->
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#5A0D0D" />
-
-  <!-- iPhone / A2HS tweaks -->
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="format-detection" content="telephone=no" />
 
-  <link rel="preload" href="assets/click.wav" as="audio" />
-  <link rel="preload" href="assets/success.wav" as="audio" />
+  <!-- Favicon / icônes -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Feuille de style -->
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <!-- Garde: barre dorée -->
-  <div id="gold-swipe"></div>
 
+<body>
+  <div id="gold-swipe"></div>
   <div id="loader" class="hidden"><div class="ring"></div></div>
 
   <audio id="sndClick" src="assets/click.wav" preload="auto"></audio>
@@ -30,11 +32,10 @@
     <header class="hero">
       <img class="hero-bg" src="assets/bg-hero-fouquets.jpg" alt="" />
       <div class="hero-overlay"></div>
-
       <div class="hero-content">
+        <div id="gold-seal" aria-hidden="true"></div>
         <img class="logo" src="icons/logo-fouquets.png" alt="Fouquet's" />
         <h1>Fouquet’s Stock &amp; Pertes</h1>
-
         <div class="home-actions">
           <button class="btn" data-route-link="dashboard">Dashboard</button>
           <button class="btn" data-route-link="losses">Pertes</button>
@@ -45,6 +46,7 @@
       </div>
     </header>
 
+    <!-- Navigation -->
     <nav class="tabs">
       <button class="btn" data-route-link="dashboard">Dashboard</button>
       <button class="btn" data-route-link="losses">Pertes</button>
@@ -61,73 +63,33 @@
       <button id="btnSettings" class="btn">⚙︎</button>
     </nav>
 
+    <!-- Contenu principal -->
     <main class="container">
-      <!-- DASHBOARD -->
+      <!-- Dashboard -->
       <section id="route-dashboard" class="card" data-route="dashboard">
         <h2>Tableau de bord (stock réel)</h2>
 
         <div class="kpis">
-          <div class="card kpi">
-            <div>Total stock</div>
-            <strong id="kpiStockJour">—</strong>
-            <small id="kpiStockDelta">Δ jour : —</small>
-          </div>
-          <div class="card kpi">
-            <div>Mouvements 7j</div>
-            <strong id="kpiMv7">—</strong>
-          </div>
-          <div class="card kpi">
-            <div>Pertes 7j</div>
-            <strong id="kpiLoss7">—</strong>
-          </div>
-          <div class="card kpi">
-            <div>Top perte</div>
-            <strong id="kpiTop">—</strong>
-          </div>
+          <div class="card kpi"><div>Total stock</div><strong id="kpiStockJour">—</strong><small id="kpiStockDelta">Δ jour : —</small></div>
+          <div class="card kpi"><div>Mouvements 7j</div><strong id="kpiMv7">—</strong></div>
+          <div class="card kpi"><div>Pertes 7j</div><strong id="kpiLoss7">—</strong></div>
+          <div class="card kpi"><div>Top perte</div><strong id="kpiTop">—</strong></div>
         </div>
 
-        <!-- Double graphique : Stock & Pertes côte à côte -->
-        <div class="grid-2 mt">
-          <div class="card">
-            <div class="row">
-              <h3>Valeur par zone</h3>
-              <button class="btn" id="btnRefreshDash">Rafraîchir</button>
-            </div>
-            <canvas id="chartStockZones" height="340"></canvas>
-          </div>
-
-          <div class="card">
-            <div class="row" style="gap:.75rem; flex-wrap:wrap">
-              <h3>Pertes 7 jours</h3>
-              <button class="btn" id="btnRefreshLoss">Rafraîchir</button>
-            </div>
-            <canvas id="chartLoss7" height="340"></canvas>
-          </div>
-        </div>
-        
-<!-- Pertes mensuelles (poids & valeur) -->
-<div class="card mt">
-  <div class="row" style="gap:.75rem;flex-wrap:wrap">
-    <h3>Pertes mensuelles — Poids (kg) & Valeur (€)</h3>
-    <button class="btn" onclick="loadDashboard()">Rafraîchir</button>
-  </div>
-  <div style="display:grid;gap:12px">
-    <canvas id="chartLossMonthKg"></canvas>
-    <canvas id="chartLossMonthEUR"></canvas>
-  </div>
-</div>
-        
-        <!-- Tableaux -->
         <div class="card mt">
-          <div class="row" style="gap:.75rem; flex-wrap:wrap">
-            <h3>Stock par zone</h3>
-            <div class="row" style="gap:.5rem">
-              <label style="display:flex;gap:.35rem;align-items:center">
-                <small>Zone</small>
-                <select id="zoneFilter"><option value="">Toutes</option></select>
-              </label>
-              <button class="btn" id="btnExportZone">Exporter CSV</button>
-            </div>
+          <div class="row"><h3>Valeur par zone</h3><button class="btn" id="btnRefreshDash">Rafraîchir</button></div>
+          <canvas id="chartStockZones" height="200"></canvas>
+        </div>
+
+        <div class="card mt">
+          <div class="row"><h3>Pertes 7 jours</h3><button class="btn" id="btnRefreshLoss">Rafraîchir</button></div>
+          <canvas id="chartLoss7" height="200"></canvas>
+        </div>
+
+        <div class="card mt">
+          <div class="row" style="gap:.5rem"><h3>Stock par zone</h3>
+            <label><small>Zone</small><select id="zoneFilter"><option value="">Toutes</option></select></label>
+            <button class="btn" id="btnExportZone">Exporter CSV</button>
           </div>
           <div id="stockZonesTableWrap" style="overflow:auto"></div>
         </div>
@@ -139,112 +101,68 @@
         </div>
       </section>
 
-      <!-- PERTE -->
+      <!-- Pertes -->
       <section id="route-losses" class="card hidden" data-route="losses">
         <h2>Pertes journalières</h2>
         <form id="formPerte" class="grid-2" onsubmit="return false;">
-          <label>Produit
-            <input id="perteProduit" list="dlProduits" required />
-          </label>
-          <label>Quantité
-            <input id="perteQte" type="number" step="any" required />
-          </label>
-          <label>Unité
-            <input id="perteUnite" list="dlUnites" required />
-          </label>
-          <label>Motif
-            <input id="perteMotif" placeholder="Ex: DLC, casse, etc." />
-          </label>
-          <label>Zone
-            <input id="perteZone" list="dlZones" required />
-          </label>
+          <label>Produit<input id="perteProduit" list="dlProduits" required /></label>
+          <label>Quantité<input id="perteQte" type="number" step="any" required /></label>
+          <label>Unité<input id="perteUnite" list="dlUnites" required /></label>
+          <label>Motif<input id="perteMotif" placeholder="Ex: DLC, casse, etc." /></label>
+          <label>Zone<input id="perteZone" list="dlZones" required /></label>
         </form>
         <button id="btnPerteSave" class="btn">Enregistrer la perte</button>
-        <datalist id="dlProduits"></datalist>
-        <datalist id="dlUnites"></datalist>
-        <datalist id="dlZones"></datalist>
+        <datalist id="dlProduits"></datalist><datalist id="dlUnites"></datalist><datalist id="dlZones"></datalist>
       </section>
 
-      <!-- JOURNALIER -->
+      <!-- Journalier -->
       <section id="route-daily" class="card hidden" data-route="daily">
         <h2>Inventaire journalier</h2>
         <form id="formDaily" class="grid-2" onsubmit="return false;">
-          <label>Flux
-            <select id="jFlux">
-              <option>ENTREE</option>
-              <option>SORTIE</option>
-            </select>
-          </label>
-          <label>Produit
-            <input id="jProduit" list="dlProduits" required />
-          </label>
-          <label>Quantité
-            <input id="jQte" type="number" step="any" required />
-          </label>
-          <label>Unité
-            <input id="jUnite" list="dlUnites" required />
-          </label>
-          <label>Zone
-            <input id="jZone" list="dlZones" required />
-          </label>
+          <label>Flux<select id="jFlux"><option>ENTREE</option><option>SORTIE</option></select></label>
+          <label>Produit<input id="jProduit" list="dlProduits" required /></label>
+          <label>Quantité<input id="jQte" type="number" step="any" required /></label>
+          <label>Unité<input id="jUnite" list="dlUnites" required /></label>
+          <label>Zone<input id="jZone" list="dlZones" required /></label>
         </form>
         <button id="btnJSave" class="btn">Enregistrer le mouvement</button>
       </section>
 
-      <!-- MENSUEL -->
+      <!-- Mensuel -->
       <section id="route-monthly" class="card hidden" data-route="monthly">
         <h2>Inventaire mensuel</h2>
         <div class="grid-2">
-          <label>Mois (AAAA-MM)
-            <input id="mMois" placeholder="2025-10" required />
-          </label>
-          <label>Zone
-            <input id="mZone" list="dlZones" required />
-          </label>
+          <label>Mois<input id="mMois" placeholder="2025-10" required /></label>
+          <label>Zone<input id="mZone" list="dlZones" required /></label>
         </div>
-        <div class="row" style="gap:.5rem;flex-wrap:wrap">
+        <div class="row" style="gap:.5rem">
           <button class="btn" id="btnGenZone">Générer la feuille de zone</button>
           <button class="btn" id="btnLoadZone">Charger</button>
           <button class="btn" id="btnAddInvRow">Ajouter une ligne</button>
           <button class="btn" id="btnSaveInv">Enregistrer</button>
         </div>
         <div id="monthlyInfo" class="hint"></div>
-        <div class="card mt">
-          <h3>Lignes d'inventaire – <span id="mHeader"></span></h3>
-          <div id="monthlyTableWrap" style="overflow:auto"></div>
-        </div>
+        <div class="card mt"><h3>Lignes d'inventaire – <span id="mHeader"></span></h3><div id="monthlyTableWrap"></div></div>
       </section>
 
-      <!-- RECETTES -->
+      <!-- Recettes -->
       <section id="route-recipes" class="card hidden" data-route="recipes">
         <h2>Recettes</h2>
         <div class="grid-2">
-          <label>Nom / Code
-            <input id="rSearch" />
-          </label>
-          <label>Multiplicateur
-            <input id="rMul" type="number" step="any" value="1" />
-          </label>
+          <label>Nom / Code<input id="rSearch" /></label>
+          <label>Multiplicateur<input id="rMul" type="number" step="any" value="1" /></label>
         </div>
         <div id="recipesList" class="mt"></div>
       </section>
     </main>
   </div>
 
-  <!-- MODAL CONFIG -->
   <div id="modal" class="modal hidden">
     <div class="panel">
       <h3>Configuration API</h3>
-      <label>API URL (WebApp /exec)<br />
-        <input id="cfgApiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" />
-      </label>
-      <label>API Key<br />
-        <input id="cfgApiKey" placeholder="clé API" />
-      </label>
-      <div class="row right mt">
-        <button id="btnCfgSave" class="btn">Enregistrer</button>
-        <button id="btnCfgClose" class="btn">Fermer</button>
-      </div>
+      <label>API URL<input id="cfgApiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" /></label>
+      <label>API Key<input id="cfgApiKey" placeholder="clé API" /></label>
+      <div class="row right mt"><button id="btnCfgSave" class="btn">Enregistrer</button><button id="btnCfgClose" class="btn">Fermer</button></div>
     </div>
   </div>
 
@@ -254,11 +172,14 @@
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .then(reg => console.log('✅ SW registered', reg))
-    .catch(err => console.error('❌ SW register error', err));
-}
-
+      const swPath = window.location.pathname.includes('fouquest-app-v-20')
+        ? '/fouquest-app-v-20/sw.js'
+        : './sw.js';
+      navigator.serviceWorker
+        .register(swPath, { scope: '/fouquest-app-v-20/' })
+        .then(reg => console.log('✅ Service Worker enregistré', reg.scope))
+        .catch(err => console.error('❌ SW register error', err));
+    }
   </script>
 </body>
 </html>
